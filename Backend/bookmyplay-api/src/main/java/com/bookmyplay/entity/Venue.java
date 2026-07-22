@@ -1,5 +1,7 @@
 package com.bookmyplay.entity;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,8 +23,9 @@ public class Venue {
     @Column(nullable = false)
     private String venueName;
 
-    @Column(nullable = false)
-    private String sport;
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @Column(nullable = false)
     private String city;
@@ -38,4 +41,7 @@ public class Venue {
     private String imageUrl;
 
     private Integer slotDuration;
+
+    @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews;
 }

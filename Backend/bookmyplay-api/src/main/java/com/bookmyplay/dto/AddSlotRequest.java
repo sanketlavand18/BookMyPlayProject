@@ -6,18 +6,13 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Data
-public class CreateBookingRequest {
-
-    private Long userId;
+public class AddSlotRequest {
 
     private Long venueId;
 
-    private LocalDate bookingDate;
+    private LocalDate slotDate;
 
     private LocalTime startTime;
 
     private LocalTime endTime;
-
-    private Long slotId;
-
 }

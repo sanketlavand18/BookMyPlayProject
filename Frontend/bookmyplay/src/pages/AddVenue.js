@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { addVenue } from "../services/venueService";
+import { getAllCategories } from "../services/categoryService";
 
 function AddVenue() {
 
@@ -8,24 +9,50 @@ function AddVenue() {
 
     const user = JSON.parse(localStorage.getItem("user"));
 
+    const [categories, setCategories] = useState([]);
+
     const [venue, setVenue] = useState({
 
         vendorId: user.id,
         venueName: "",
-        sport: "",
+        categoryId: "",
         city: "",
         address: "",
         description: "",
         pricePerHour: "",
-        imageUrl: ""
+        imageUrl: "",
+        slotDuration: ""
 
     });
+
+    useEffect(() => {
+
+        loadCategories();
+
+    }, []);
+
+    const loadCategories = async () => {
+
+        try {
+
+            const response = await getAllCategories();
+            setCategories(response.data);
+
+        } catch (error) {
+
+            console.log(error);
+
+        }
+
+    };
 
     const handleChange = (e) => {
 
         setVenue({
+
             ...venue,
             [e.target.name]: e.target.value
+
         });
 
     };
@@ -44,6 +71,8 @@ function AddVenue() {
 
         } catch (error) {
 
+            console.log(error);
+
             alert("Failed to Add Venue");
 
         }
@@ -58,7 +87,7 @@ function AddVenue() {
 
                 <div className="card-body">
 
-                    <h2>Add Venue</h2>
+                    <h2 className="mb-4">Add Venue</h2>
 
                     <form onSubmit={handleSubmit}>
 
@@ -66,34 +95,69 @@ function AddVenue() {
                             className="form-control mb-3"
                             placeholder="Venue Name"
                             name="venueName"
+                            value={venue.venueName}
                             onChange={handleChange}
+                            required
                         />
 
-                        <input
+                        {/* Category Dropdown */}
+
+                        <select
                             className="form-control mb-3"
-                            placeholder="Sport"
-                            name="sport"
+                            name="categoryId"
+                            value={venue.categoryId}
                             onChange={handleChange}
-                        />
+                            required
+                        >
+
+                            <option value="">
+
+                                Select Category
+
+                            </option>
+
+                            {
+
+                                categories.map(category => (
+
+                                    <option
+                                        key={category.id}
+                                        value={category.id}
+                                    >
+
+                                        {category.categoryName}
+
+                                    </option>
+
+                                ))
+
+                            }
+
+                        </select>
 
                         <input
                             className="form-control mb-3"
                             placeholder="City"
                             name="city"
+                            value={venue.city}
                             onChange={handleChange}
+                            required
                         />
 
                         <input
                             className="form-control mb-3"
                             placeholder="Address"
                             name="address"
+                            value={venue.address}
                             onChange={handleChange}
+                            required
                         />
 
                         <textarea
                             className="form-control mb-3"
                             placeholder="Description"
                             name="description"
+                            value={venue.description}
                             onChange={handleChange}
                         />
 
@@ -102,17 +166,32 @@ function AddVenue() {
                             className="form-control mb-3"
                             placeholder="Price Per Hour"
                             name="pricePerHour"
+                            value={venue.pricePerHour}
                             onChange={handleChange}
+                            required
                         />
 
                         <input
                             className="form-control mb-3"
                             placeholder="Image URL"
                             name="imageUrl"
+                            value={venue.imageUrl}
                             onChange={handleChange}
                         />
 
-                        <button className="btn btn-success">
+                        <input
+                            type="number"
+                            className="form-control mb-3"
+                            placeholder="Slot Duration (Minutes)"
+                            name="slotDuration"
+                            value={venue.slotDuration}
+                            onChange={handleChange}
+                        />
+
+                        <button
+                            className="btn btn-success w-100"
+                            type="submit"
+                        >
 
                             Add Venue
 

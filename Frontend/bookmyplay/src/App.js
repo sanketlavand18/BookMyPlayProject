@@ -14,7 +14,16 @@ import MyBookings from "./pages/MyBookings";
 import VendorDashboard from "./pages/VendorDashboard";
 import VenueDetails from "./pages/VenueDetails";
 import AddVenue from "./pages/AddVenue";
+import EditVenue from "./pages/EditVenue";
 
+import ManageSlots from "./pages/ManageSlots";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ManageUsers from "./pages/admin/ManageUsers";
+import ManageVenues from "./pages/admin/ManageVenues";
+import ManageBookings from "./pages/admin/ManageBookings";
+import ManageReviews from "./pages/admin/ManageReviews";
+
+import ManageCategories from "./pages/admin/ManageCategories";
 function App() {
   return (
     <BrowserRouter>
@@ -34,6 +43,18 @@ function App() {
         <Route path="/venue/:id" element={<VenueDetails />} />
         <Route path="/vendor" element={<VendorDashboard />} />
         <Route path="/vendor/add" element={<AddVenue />} />
+        <Route path="/vendor/edit/:id" element={<EditVenue />} />
+
+        <Route path="/vendor/slots/:venueId" element={<ManageSlots />}  />
+
+      
+
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<ManageUsers />} />
+        <Route path="/admin/venues" element={<ManageVenues />} />
+        <Route path="/admin/bookings" element={<ManageBookings />} />
+        <Route path="/admin/reviews" element={<ManageReviews />} />
+        <Route path="/admin/categories" element={<ManageCategories />} />
       </Routes>
 
       <Footer />

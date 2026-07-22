@@ -6,12 +6,20 @@ import lombok.Data;
 public class AddVenueRequest {
 
     private Long vendorId;
+
     private String venueName;
-    private String sport;
+
+    private Long categoryId;
+
     private String city;
+
     private String address;
+
     private String description;
+
     private Double pricePerHour;
+
     private String imageUrl;
 
+    private Integer slotDuration;
 }

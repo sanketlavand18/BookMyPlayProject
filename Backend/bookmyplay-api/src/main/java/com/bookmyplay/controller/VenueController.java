@@ -45,4 +45,16 @@ public class VenueController {
 
     }
 
+    @PutMapping("/{id}")
+    public String updateVenue(@PathVariable Long id,
+            @RequestBody AddVenueRequest request) {
+
+        return venueService.updateVenue(id, request);
+
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteVenue(@PathVariable Long id) {
+        return venueService.deleteVenue(id);
+    }
 }

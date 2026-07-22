@@ -6,6 +6,7 @@ import com.bookmyplay.entity.BookingStatus;
 import com.bookmyplay.entity.User;
 import com.bookmyplay.entity.Venue;
 import com.bookmyplay.repository.BookingRepository;
+import com.bookmyplay.repository.SlotRepository;
 import com.bookmyplay.repository.UserRepository;
 import com.bookmyplay.repository.VenueRepository;
 import com.bookmyplay.service.BookingService;
@@ -22,6 +23,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final VenueRepository venueRepository;
+    private final SlotRepository slotRepository;
 
     @Override
     public String createBooking(CreateBookingRequest request) {

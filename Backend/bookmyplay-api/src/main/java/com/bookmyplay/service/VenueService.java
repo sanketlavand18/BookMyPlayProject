@@ -14,4 +14,7 @@ public interface VenueService {
 
     Venue getVenueById(Long id);
 
+    String updateVenue(Long id, AddVenueRequest request);
+
+    String deleteVenue(Long id);
 }
