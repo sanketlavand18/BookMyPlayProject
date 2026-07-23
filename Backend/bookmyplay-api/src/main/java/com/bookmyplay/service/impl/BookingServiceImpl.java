@@ -1,5 +1,6 @@
 package com.bookmyplay.service.impl;
 
+import com.bookmyplay.dto.BookingResponse;
 import com.bookmyplay.dto.CreateBookingRequest;
 import com.bookmyplay.entity.Booking;
 import com.bookmyplay.entity.BookingStatus;
@@ -45,8 +46,8 @@ public class BookingServiceImpl implements BookingService {
         // Step 4 : Create Booking
 
         Booking booking = Booking.builder()
-                .userId(user.getId())
-                .venueId(venue.getId())
+                .user(user)
+                .venue(venue)
                 .bookingDate(request.getBookingDate())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
@@ -61,9 +62,34 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> getBookingsByUser(Long userId) {
+    public List<BookingResponse> getBookingsByUser(Long userId) {
 
-        return bookingRepository.findByUserId(userId);
+        List<Booking> bookings = bookingRepository.findByUser_Id(userId);
+
+        return bookings.stream().map(booking ->
+
+        BookingResponse.builder()
+                .id(booking.getId())
+
+                .userId(booking.getUser().getId())
+                .userName(booking.getUser().getFullName())
+
+                .venueId(booking.getVenue().getId())
+                .venueName(booking.getVenue().getVenueName())
+                .city(booking.getVenue().getCity())
+                .imageUrl(booking.getVenue().getImageUrl())
+                .categoryName(booking.getVenue().getCategory().getCategoryName())
+
+                .bookingDate(booking.getBookingDate())
+                .startTime(booking.getStartTime())
+                .endTime(booking.getEndTime())
+                .totalPrice(booking.getTotalPrice())
+                .bookingStatus(booking.getBookingStatus().name())
+                .createdAt(booking.getCreatedAt())
+
+                .build()
+
+        ).toList();
 
     }
 

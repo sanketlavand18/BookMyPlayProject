@@ -4,19 +4,18 @@ import com.bookmyplay.entity.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
-
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    List<Booking> findByUserId(Long userId);
+    List<Booking> findByUser_Id(Long userId);
 
-    List<Booking> findByVenueId(Long venueId);
+    List<Booking> findByVenue_Id(Long venueId);
 
-    List<Booking> findByVenueIdAndBookingDate(
+    List<Booking> findByVenue_IdAndBookingDate(
             Long venueId,
             LocalDate bookingDate);
 
-    void deleteByVenueId(Long venueId);
+    void deleteByVenue_Id(Long venueId);
 
 }

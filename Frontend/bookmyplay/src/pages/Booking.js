@@ -53,50 +53,129 @@ function Booking() {
 
     return (
 
-        <div className="container mt-5">
+    <div className="container my-5">
 
-            <div className="card shadow">
+        <div className="row justify-content-center">
 
-                <div className="card-body">
+            <div className="col-lg-8">
 
-                    <h2>Book Venue</h2>
+                <div className="card shadow-lg border-0 rounded-4">
 
-                    <form onSubmit={handleSubmit}>
+                    <div className="card-header bg-success text-white text-center py-3">
 
-                        <label>Date</label>
+                        <h2 className="mb-0">
+                            Book Your Venue
+                        </h2>
 
-                        <input
-                            type="date"
-                            className="form-control mb-3"
-                            name="bookingDate"
-                            onChange={handleChange}
-                        />
+                    </div>
 
-                        <label>Start Time</label>
+                    <div className="card-body p-4">
 
-                        <input
-                            type="time"
-                            className="form-control mb-3"
-                            name="startTime"
-                            onChange={handleChange}
-                        />
+                        <div className="alert alert-info">
 
-                        <label>End Time</label>
+                            <h5 className="mb-1">Booking Information</h5>
 
-                        <input
-                            type="time"
-                            className="form-control mb-3"
-                            name="endTime"
-                            onChange={handleChange}
-                        />
+                            <p className="mb-0">
+                                Please select your booking date and time carefully.
+                            </p>
 
-                        <button className="btn btn-success">
+                        </div>
 
-                            Confirm Booking
+                        <form onSubmit={handleSubmit}>
 
-                        </button>
+                            <div className="mb-3">
 
-                    </form>
+                                <label className="form-label fw-bold">
+                                    📅 Booking Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    name="bookingDate"
+                                    onChange={handleChange}
+                                    required
+                                />
+
+                            </div>
+
+                            <div className="row">
+
+                                <div className="col-md-6 mb-3">
+
+                                    <label className="form-label fw-bold">
+                                        🕒 Start Time
+                                    </label>
+
+                                    <input
+                                        type="time"
+                                        className="form-control"
+                                        name="startTime"
+                                        onChange={handleChange}
+                                        required
+                                    />
+
+                                </div>
+
+                                <div className="col-md-6 mb-3">
+
+                                    <label className="form-label fw-bold">
+                                        🕒 End Time
+                                    </label>
+
+                                    <input
+                                        type="time"
+                                        className="form-control"
+                                        name="endTime"
+                                        onChange={handleChange}
+                                        required
+                                    />
+
+                                </div>
+
+                            </div>
+
+                            <hr />
+
+                            <div className="card bg-light mb-4">
+
+                                <div className="card-body">
+
+                                    <h5>Booking Summary</h5>
+
+                                    <p>
+                                        <strong>User ID :</strong> {user.id}
+                                    </p>
+
+                                    <p>
+                                        <strong>Venue ID :</strong> {booking.venueId}
+                                    </p>
+
+                                    <p>
+                                        <strong>Total Price :</strong>
+
+                                        <span className="text-success fw-bold">
+                                            ₹ {booking.totalPrice}
+                                        </span>
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="btn btn-success btn-lg w-100"
+                            >
+
+                                Confirm Booking
+
+                            </button>
+
+                        </form>
+
+                    </div>
 
                 </div>
 
@@ -104,8 +183,8 @@ function Booking() {
 
         </div>
 
-    );
+    </div>
 
+);
 }
-
 export default Booking;

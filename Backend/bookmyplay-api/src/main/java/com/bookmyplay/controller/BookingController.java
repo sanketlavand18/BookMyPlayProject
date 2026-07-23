@@ -1,7 +1,7 @@
 package com.bookmyplay.controller;
 
 import com.bookmyplay.dto.CreateBookingRequest;
-import com.bookmyplay.entity.Booking;
+import com.bookmyplay.dto.BookingResponse;
 import com.bookmyplay.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +25,7 @@ public class BookingController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<Booking> getBookings(
+    public List<BookingResponse> getBookings(
             @PathVariable Long userId) {
 
         return bookingService.getBookingsByUser(userId);

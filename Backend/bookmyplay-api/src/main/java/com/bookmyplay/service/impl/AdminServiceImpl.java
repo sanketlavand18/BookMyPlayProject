@@ -71,7 +71,7 @@ public class AdminServiceImpl implements AdminService {
 
         slotRepository.deleteByVenueId(id);
 
-        bookingRepository.deleteByVenueId(id);
+        bookingRepository.deleteByVenue_Id(id);
 
         venueRepository.deleteById(id);
     }

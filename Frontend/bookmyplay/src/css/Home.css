@@ -1,0 +1,236 @@
+.hero-section{
+    height:75vh;
+
+    background-image:url("https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=1600&q=80");
+
+    background-size:cover;
+
+    background-position:center;
+
+    position:relative;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+}
+
+.hero-overlay{
+
+    background:rgba(0,0,0,.60);
+
+    width:100%;
+
+    height:100%;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.card{
+
+    transition:.3s;
+
+    border:none;
+
+    border-radius:15px;
+
+}
+
+.card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 15px 35px rgba(0,0,0,.25);
+
+}
+
+.card img{
+
+    border-radius:15px 15px 0 0;
+
+}
+
+.btn-success{
+
+    border-radius:30px;
+
+    font-weight:bold;
+
+}
+
+body{
+
+    background:#f8f9fa;
+
+}
+.category-card{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:35px;
+
+    transition:.3s;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+
+}
+
+.category-card:hover{
+
+    transform:translateY(-10px);
+
+    background:#198754;
+
+    color:white;
+
+}
+
+.category-card svg{
+
+    transition:.3s;
+
+}
+
+.category-card:hover svg{
+
+    transform:scale(1.2);
+
+}
+.input-group input{
+
+    border-radius:40px 0 0 40px;
+
+}
+
+.input-group button{
+
+    border-radius:0 40px 40px 0;
+
+    padding:0 30px;
+
+}
+.card{
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+    transition:.35s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-12px);
+
+    box-shadow:0 18px 40px rgba(0,0,0,.2);
+
+}
+
+.card img{
+
+    transition:.4s;
+
+}
+
+.card:hover img{
+
+    transform:scale(1.08);
+
+}
+
+.badge{
+
+    width:fit-content;
+
+    font-size:14px;
+
+    padding:8px 14px;
+
+}
+
+.card-body{
+
+    padding:22px;
+
+}
+
+.card-body h4{
+
+    font-weight:700;
+
+}
+.feature-card{
+
+    padding:30px;
+
+    border-radius:20px;
+
+    background:white;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+
+    transition:.3s;
+
+    height:100%;
+
+}
+
+.feature-card:hover{
+
+    transform:translateY(-10px);
+
+    background:#198754;
+
+    color:white;
+
+}
+
+.feature-card:hover .text-success{
+
+    color:white !important;
+
+}
+.stats-section{
+
+    background:#198754;
+
+    padding:70px 0;
+
+    margin-top:60px;
+
+}
+
+.stats-card{
+
+    color:white;
+
+}
+
+.stats-card h2{
+
+    font-size:40px;
+
+    font-weight:bold;
+
+}
+
+.stats-card p{
+
+    margin-top:10px;
+
+    font-size:18px;
+
+}

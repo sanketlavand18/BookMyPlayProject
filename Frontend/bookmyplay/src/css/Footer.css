@@ -1,0 +1,61 @@
+.footer{
+
+    background:#212529;
+
+    color:white;
+
+    padding:60px 0 20px;
+
+}
+
+.footer a{
+
+    color:#ddd;
+
+    text-decoration:none;
+
+}
+
+.footer a:hover{
+
+    color:#198754;
+
+}
+
+.footer ul li{
+
+    margin-bottom:10px;
+
+}
+
+.social-icons{
+
+    display:flex;
+
+    gap:20px;
+
+    font-size:28px;
+
+}
+
+.social-icons svg{
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+.social-icons svg:hover{
+
+    color:#198754;
+
+    transform:scale(1.2);
+
+}
+
+.footer hr{
+
+    border-color:#555;
+
+}

@@ -1,74 +1,68 @@
-import { FaMapMarkerAlt, FaClock, FaShieldAlt, FaMobileAlt } from "react-icons/fa";
+import { FaCheckCircle, FaClock, FaShieldAlt, FaMoneyBillWave } from "react-icons/fa";
 
 function WhyChooseUs() {
 
     const features = [
 
         {
-            icon: <FaMapMarkerAlt size={45} className="text-success" />,
-            title: "Find Nearby Venues",
-            desc: "Search sports venues near your location."
-        },
-
-        {
-            icon: <FaClock size={45} className="text-success" />,
+            icon: <FaClock size={45} />,
             title: "Instant Booking",
-            desc: "Book your slot in just a few clicks."
+            desc: "Book your favorite venue in seconds."
         },
 
         {
-            icon: <FaShieldAlt size={45} className="text-success" />,
-            title: "Secure Payments",
-            desc: "Safe and secure online transactions."
+            icon: <FaShieldAlt size={45} />,
+            title: "Verified Venues",
+            desc: "Trusted vendors and quality grounds."
         },
 
         {
-            icon: <FaMobileAlt size={45} className="text-success" />,
-            title: "Mobile Friendly",
-            desc: "Book from any device anytime."
+            icon: <FaMoneyBillWave size={45} />,
+            title: "Best Prices",
+            desc: "Affordable booking with no hidden charges."
+        },
+
+        {
+            icon: <FaCheckCircle size={45} />,
+            title: "Easy Cancellation",
+            desc: "Simple cancellation and booking management."
         }
 
     ];
 
     return (
 
-        <section className="bg-light py-5">
+        <div className="container my-5">
 
-            <div className="container">
+            <h2 className="text-center fw-bold mb-5">
+                Why Choose BookMyPlay?
+            </h2>
 
-                <h2 className="text-center fw-bold mb-5">
-                    Why Choose BookMyPlay?
-                </h2>
+            <div className="row">
 
-                <div className="row">
+                {features.map((feature, index) => (
 
-                    {features.map((feature, index) => (
+                    <div className="col-md-3 mb-4" key={index}>
 
-                        <div className="col-md-3 mb-4" key={index}>
+                        <div className="feature-card text-center">
 
-                            <div className="card border-0 shadow h-100 text-center p-4">
-
+                            <div className="text-success mb-3">
                                 {feature.icon}
-
-                                <h4 className="mt-3">
-                                    {feature.title}
-                                </h4>
-
-                                <p>
-                                    {feature.desc}
-                                </p>
-
                             </div>
+
+                            <h5>{feature.title}</h5>
+
+                            <p>{feature.desc}</p>
 
                         </div>
 
-                    ))}
+                    </div>
 
-                </div>
+                ))}
 
             </div>
 
-        </section>
+        </div>
 
     );
 
