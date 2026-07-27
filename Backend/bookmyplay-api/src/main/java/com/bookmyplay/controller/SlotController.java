@@ -11,7 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/slots")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+
 public class SlotController {
 
     private final SlotService slotService;
@@ -24,10 +24,11 @@ public class SlotController {
     }
 
     @GetMapping("/venue/{venueId}")
-    public List<Slot> getSlots(@PathVariable Long venueId) {
-
-        return slotService.getSlotsByVenue(venueId);
-
+    public List<Slot> getSlots(
+            @PathVariable Long venueId,
+            @RequestParam(required = false) String date) {
+        java.time.LocalDate localDate = date != null ? java.time.LocalDate.parse(date) : java.time.LocalDate.now();
+        return slotService.getSlotsByVenue(venueId, localDate);
     }
 
     @DeleteMapping("/{id}")

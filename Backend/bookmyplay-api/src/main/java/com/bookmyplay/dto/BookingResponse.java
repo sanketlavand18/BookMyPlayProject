@@ -40,4 +40,18 @@ public class BookingResponse {
     private String bookingStatus;
 
     private LocalDateTime createdAt;
+    private Long slotId;
+
+    // Customer Info
+    private String customerName;
+    private String customerPhone;
+    private String customerEmail;
+
+    // Vendor Info
+    private Long vendorId;
+    private String vendorName;
+
+    // Payment Info
+    private String paymentStatus;
+    private String transactionId;
 }

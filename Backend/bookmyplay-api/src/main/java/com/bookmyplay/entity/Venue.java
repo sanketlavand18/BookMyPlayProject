@@ -40,7 +40,22 @@ public class Venue {
 
     private String imageUrl;
 
-    private Integer slotDuration;
+    private Double latitude;
+
+    private Double longitude;
+
+    private String state;
+
+    private String country;
+
+    private String postalCode;
+
+    private String openTime;
+
+    private String closeTime;
+
+    @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VenueImage> images;
 
     @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews;

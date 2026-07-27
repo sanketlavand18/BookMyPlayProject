@@ -16,6 +16,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             Long venueId,
             LocalDate bookingDate);
 
+    List<Booking> findByVenue_VendorId(Long vendorId);
+
     void deleteByVenue_Id(Long venueId);
 
 }

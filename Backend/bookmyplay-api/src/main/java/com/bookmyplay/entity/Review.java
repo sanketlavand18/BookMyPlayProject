@@ -31,4 +31,10 @@ public class Review {
     public void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    @Transient
+    private String userName;
+
+    @Transient
+    private String venueName;
 }

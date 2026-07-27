@@ -6,8 +6,15 @@ import java.util.List;
 
 public interface BookingService {
 
-    String createBooking(CreateBookingRequest request);
+    BookingResponse createBooking(CreateBookingRequest request);
 
     List<BookingResponse> getBookingsByUser(Long userId);
 
+    String cancelBooking(Long bookingId);
+
+    BookingResponse getBookingById(Long bookingId);
+
+    String rescheduleBooking(Long bookingId, Long newSlotId);
+
+    List<BookingResponse> getBookingsByVendor(Long vendorId);
 }

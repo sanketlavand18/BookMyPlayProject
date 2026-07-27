@@ -9,7 +9,7 @@ public interface SlotService {
 
     String addSlot(AddSlotRequest request);
 
-    List<Slot> getSlotsByVenue(Long venueId);
+    List<Slot> getSlotsByVenue(Long venueId, java.time.LocalDate date);
 
     String deleteSlot(Long id);
 

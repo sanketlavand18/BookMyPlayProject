@@ -30,4 +30,12 @@ public class User {
 
     @Column(nullable = false)
     private String role;
+
+    private String profilePicture;
+
+    private String address;
+
+    private String city;
+
+    private String businessName;
 }

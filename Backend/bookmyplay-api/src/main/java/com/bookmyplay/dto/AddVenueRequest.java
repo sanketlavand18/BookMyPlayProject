@@ -21,5 +21,17 @@ public class AddVenueRequest {
 
     private String imageUrl;
 
-    private Integer slotDuration;
+    private Double latitude;
+
+    private Double longitude;
+
+    private String state;
+
+    private String country;
+
+    private String postalCode;
+
+    private String openTime;
+
+    private String closeTime;
 }

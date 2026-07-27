@@ -10,4 +10,10 @@ public interface ReviewService {
 
     List<Review> getReviews(Long venueId);
 
+    List<Review> getReviewsByUser(Long userId);
+
+    Review updateReview(Long id, Review request);
+
+    void deleteReview(Long id);
+
 }

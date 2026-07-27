@@ -11,54 +11,106 @@ import Register from "./pages/Register";
 import Booking from "./pages/Booking";
 import MyBookings from "./pages/MyBookings";
 
+
+import Profile from "./pages/Profile";
+
+import UserDashboard from "./pages/UserDashboard";
 import VendorDashboard from "./pages/VendorDashboard";
 import VenueDetails from "./pages/VenueDetails";
 import AddVenue from "./pages/AddVenue";
 import EditVenue from "./pages/EditVenue";
 
 import ManageSlots from "./pages/ManageSlots";
+import VendorProfile from "./pages/VendorProfile";
+import VendorBookings from "./pages/VendorBookings";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageBookings from "./pages/admin/ManageBookings";
 import ManageReviews from "./pages/admin/ManageReviews";
+import ManageVendors from "./pages/admin/ManageVendors";
+import ManagePayments from "./pages/admin/ManagePayments";
+import PublicLayout from "./layouts/PublicLayout";
+import UserLayout from "./layouts/UserLayout";
 
 import ManageCategories from "./pages/admin/ManageCategories";
+import AdminProfile from "./pages/admin/AdminProfile";
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
+  <BrowserRouter>
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+<Routes>
 
-        <Route path="/booking/:id" element={<Booking />} />
-        <Route path="/mybookings" element={<MyBookings />} />
-        
+{/* Public */}
 
-        <Route path="/venue/:id" element={<VenueDetails />} />
-        <Route path="/vendor" element={<VendorDashboard />} />
-        <Route path="/vendor/add" element={<AddVenue />} />
-        <Route path="/vendor/edit/:id" element={<EditVenue />} />
+<Route element={<PublicLayout />}>
 
-        <Route path="/vendor/slots/:venueId" element={<ManageSlots />}  />
+<Route path="/" element={<Home />} />
 
-      
+<Route path="/about" element={<About />} />
 
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/users" element={<ManageUsers />} />
-        <Route path="/admin/venues" element={<ManageVenues />} />
-        <Route path="/admin/bookings" element={<ManageBookings />} />
-        <Route path="/admin/reviews" element={<ManageReviews />} />
-        <Route path="/admin/categories" element={<ManageCategories />} />
-      </Routes>
+<Route path="/contact" element={<Contact />} />
 
-      <Footer />
-    </BrowserRouter>
+<Route path="/login" element={<Login />} />
+
+<Route path="/register" element={<Register />} />
+
+<Route path="/venue/:id" element={<VenueDetails />} />
+
+</Route>
+
+{/* User */}
+
+<Route element={<UserLayout />}>
+
+<Route path="/user" element={<UserDashboard />} />
+
+<Route path="/user/profile" element={<UserDashboard />} />
+
+<Route path="/mybookings" element={<MyBookings />} />
+
+<Route path="/booking/:id" element={<Booking />} />
+
+<Route path="/profile" element={<Profile />} />
+</Route>
+
+{/* Vendor */}
+
+<Route path="/vendor" element={<VendorDashboard />} />
+
+<Route path="/vendor/add" element={<AddVenue />} />
+
+<Route path="/vendor/edit/:id" element={<EditVenue />} />
+
+<Route path="/vendor/slots/:venueId" element={<ManageSlots />} />
+
+<Route path="/vendor/profile" element={<VendorProfile />} />
+
+<Route path="/vendor/bookings" element={<VendorBookings />} />
+
+{/* Admin */}
+
+<Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+<Route path="/admin/users" element={<ManageUsers />} />
+
+<Route path="/admin/venues" element={<ManageVenues />} />
+
+<Route path="/admin/bookings" element={<ManageBookings />} />
+
+<Route path="/admin/reviews" element={<ManageReviews />} />
+
+<Route path="/admin/categories" element={<ManageCategories />} />
+
+<Route path="/admin/vendors" element={<ManageVendors />} />
+
+<Route path="/admin/payments" element={<ManagePayments />} />
+
+<Route path="/admin/profile" element={<AdminProfile />} />
+
+</Routes>
+
+</BrowserRouter>
   );
 }
 

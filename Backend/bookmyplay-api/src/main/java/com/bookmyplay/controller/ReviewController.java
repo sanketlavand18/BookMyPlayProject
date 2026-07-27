@@ -10,7 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+
 public class ReviewController {
 
     private final ReviewService reviewService;
@@ -27,6 +27,22 @@ public class ReviewController {
 
         return reviewService.getReviews(venueId);
 
+    }
+
+    @GetMapping("/user/{userId}")
+    public List<Review> getReviewsByUser(@PathVariable Long userId) {
+        return reviewService.getReviewsByUser(userId);
+    }
+
+    @PutMapping("/{reviewId}")
+    public Review updateReview(@PathVariable Long reviewId, @RequestBody Review review) {
+        return reviewService.updateReview(reviewId, review);
+    }
+
+    @DeleteMapping("/{reviewId}")
+    public String deleteReview(@PathVariable Long reviewId) {
+        reviewService.deleteReview(reviewId);
+        return "Review Deleted Successfully";
     }
 
 }

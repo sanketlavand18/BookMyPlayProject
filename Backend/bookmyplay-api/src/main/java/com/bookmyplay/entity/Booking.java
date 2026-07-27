@@ -40,4 +40,16 @@ public class Booking {
     private BookingStatus bookingStatus;
 
     private LocalDateTime createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "slot_id")
+    private Slot slot;
+
+    @Transient
+    private String customerName;
+
+    @Transient
+    private String vendorName;
+
+    @Transient
+    private String userName;
 }

@@ -1,0 +1,273 @@
+/* Register.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+.register-page {
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background blob shapes to enhance glassmorphism */
+.register-page::before,
+.register-page::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.register-page::before {
+  width: 300px;
+  height: 300px;
+  background: #f59e0b;
+  top: 10%;
+  left: 10%;
+}
+
+.register-page::after {
+  width: 400px;
+  height: 400px;
+  background: #10b981;
+  bottom: 10%;
+  right: 10%;
+}
+
+.register-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 580px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  padding: 45px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.register-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+.register-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.register-subtitle {
+  font-size: 1rem;
+  color: #4b5563;
+  text-align: center;
+  margin-bottom: 35px;
+  font-weight: 400;
+}
+
+.register-card label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.register-card .input-group-text {
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-right: none;
+  color: #9ca3af;
+  transition: all 0.2s;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.register-card .form-control,
+.register-card .form-select {
+  border: 2px solid #e5e7eb;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  color: #1f2937;
+  background-color: #fff;
+  transition: all 0.2s;
+}
+
+.register-card .input-group .form-control {
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.register-card .form-control:focus,
+.register-card .form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.register-card .input-group:focus-within .input-group-text {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.register-card .btn-outline-secondary {
+  border: 2px solid #e5e7eb;
+  border-left: none;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.register-card .btn-outline-secondary:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Password Strength Indicator styling */
+.strength-container {
+  margin-top: 8px;
+}
+
+.strength-bar {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #e5e7eb;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.strength-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+  display: block;
+}
+
+.strength-weak {
+  background-color: #ef4444;
+  width: 33.3%;
+}
+
+.strength-medium {
+  background-color: #f59e0b;
+  width: 66.6%;
+}
+
+.strength-strong {
+  background-color: #10b981;
+  width: 100%;
+}
+
+/* Role Radio selection segment styling */
+.role-segment {
+  display: flex;
+  background: #f3f4f6;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+}
+
+.role-option {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.role-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.role-label {
+  display: block;
+  padding: 10px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  border-radius: 10px;
+  transition: all 0.2s;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+}
+
+.role-option input[type="radio"]:checked + .role-label {
+  background: #ffffff;
+  color: #1e3a8a;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: #fff;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 12px;
+  width: 100%;
+  margin-top: 15px;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+  transition: all 0.2s;
+}
+
+.register-btn:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
+}
+
+.register-btn:active {
+  transform: translateY(0);
+}
+
+.login-link-container {
+  text-align: center;
+  margin-top: 25px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.login-link-container a {
+  color: #1e3a8a;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.login-link-container a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.register-card {
+  animation: fadeIn 0.5s ease-out;
+}

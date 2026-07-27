@@ -1,7 +1,8 @@
 import api from "./api";
 
-export const getSlotsByVenue = (venueId) => {
-    return api.get(`/slots/venue/${venueId}`);
+export const getSlotsByVenue = (venueId, date) => {
+    const url = date ? `/slots/venue/${venueId}?date=${date}` : `/slots/venue/${venueId}`;
+    return api.get(url);
 };
 
 export const addSlot = (slot) => {

@@ -9,3 +9,7 @@ export const getDashboard = () => {
 export const getUsers = () => {
     return axios.get(`${API}/users`);
 };
+
+export const loginAdmin = (loginData) => {
+    return axios.post(`${API}/login`, loginData);
+};

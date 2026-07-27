@@ -1,9 +1,11 @@
-import api from "./api";
+import axios from "axios";
 
-export const loginUser = (data) => {
-    return api.post("/auth/login", data);
+const API_URL = "http://localhost:8080/api/auth";
+
+export const registerUser = (user) => {
+    return axios.post(`${API_URL}/register`, user);
 };
 
-export const registerUser = (data) => {
-    return api.post("/auth/register", data);
+export const loginUser = (login) => {
+    return axios.post(`${API_URL}/login`, login);
 };
