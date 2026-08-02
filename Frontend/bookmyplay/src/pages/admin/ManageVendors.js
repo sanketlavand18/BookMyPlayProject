@@ -29,18 +29,20 @@ function ManageVendors() {
 
   const loadVendors = async () => {
     setLoading(true);
+
     try {
-      const res = await axios.get("http://localhost:8080/api/admin/users");
-      // filter only vendors
-      const filtered = (res.data || []).filter(u => "VENDOR".equalsIgnoreCase(u.role) || u.role === "VENDOR");
-      setVendors(filtered);
-    } catch (e) {
-      console.error(e);
+      const res = await axios.get("http://localhost:8080/api/admin/vendors");
+
+      console.log("Vendor API Response:", res.data);
+
+      setVendors(res.data || []);
+    } catch (err) {
+      console.error("Error loading vendors:", err);
+      setVendors([]);
     } finally {
       setLoading(false);
     }
   };
-
   const handleToggleSuspend = async (vendor) => {
     const isSuspended = vendor.isBlocked || false;
     const action = isSuspended ? "unblock" : "block";
@@ -66,7 +68,7 @@ function ManageVendors() {
       const bookingsRes = await axios.get("http://localhost:8080/api/admin/bookings");
       const allBookings = bookingsRes.data || [];
       const vendorBookings = allBookings.filter(b => b.venue?.vendorId === vendor.id);
-      
+
       const revenue = vendorBookings
         .filter(b => b.bookingStatus === "CONFIRMED")
         .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
@@ -108,7 +110,7 @@ function ManageVendors() {
   return (
     <div className="container-fluid">
       <div className="row">
-        
+
         {/* Left Sidebar */}
         <div className="col-md-2 p-0">
           <AdminSidebar />
@@ -116,13 +118,13 @@ function ManageVendors() {
 
         {/* Content Column */}
         <div className="col-md-10 p-0 bg-light" style={{ minHeight: "100vh" }}>
-          
+
           <AdminNavbar />
 
           <div className="px-4 pb-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h2 className="fw-bold mb-0 text-dark">Manage Business Vendors</h2>
-              
+
               {/* Search */}
               <div className="input-group shadow-sm" style={{ width: "300px" }}>
                 <span className="input-group-text bg-white border-end-0 text-muted"><FaSearch /></span>
@@ -220,7 +222,7 @@ function ManageVendors() {
                 <button type="button" className="btn-close btn-close-white" onClick={() => setVendorDetailsModal({ show: false, vendor: null, venues: [], bookings: [], subscription: null, revenue: 0 })}></button>
               </div>
               <div className="modal-body p-4">
-                
+
                 {/* Highlights grid */}
                 <div className="row g-3 mb-4">
                   <div className="col-md-3">

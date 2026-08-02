@@ -10,7 +10,20 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByVenueId(Long venueId);
 
-    List<Review> findByUserId(Long userId);
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT r
+        FROM Review r
+        LEFT JOIN FETCH r.venue
+        WHERE r.userId = :userId
+    """)
+    List<Review> findByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT r
+        FROM Review r
+        LEFT JOIN FETCH r.venue
+    """)
+    List<Review> findAllWithVenue();
 
     void deleteByVenueId(Long venueId);
 

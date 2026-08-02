@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import {
   FaBullseye,
   FaEye,
@@ -21,6 +22,28 @@ import { GiCricketBat, GiTennisRacket } from "react-icons/gi";
 import "./About.css";
 
 function About() {
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/about-settings");
+      setSettings(res.data);
+    } catch (e) {
+      console.error("Error loading about settings:", e);
+    }
+  };
+
+  const s = settings || {
+    title: "About BookMyPlay",
+    description: "BookMyPlay connects sports enthusiasts with trusted venue owners through a seamless online booking platform. Our goal is to simplify sports venue discovery, enable real-time slot booking, and help venue owners efficiently manage their facilities and reservations.",
+    mission: "Make sports accessible through fast and reliable venue booking.",
+    vision: "Become India's most trusted sports venue booking platform.",
+    companyValues: "Encourage healthy lifestyles by making sports more accessible."
+  };
   return (
     <div className="about-page">
       {/* Hero Section */}
@@ -31,12 +54,12 @@ function About() {
               <span className="badge bg-white text-success px-3 py-2 rounded-pill fw-bold mb-3 shadow-sm">
                 About Us
               </span>
-              <h1 className="display-4 fw-extrabold mb-3">About BookMyPlay</h1>
+              <h1 className="display-4 fw-extrabold mb-3">{s.title}</h1>
               <p className="lead fw-semibold mb-4 text-light-green">
                 India's Smart Sports Venue Booking Platform
               </p>
               <p className="fs-5 text-light opacity-90 lh-base">
-                BookMyPlay is a modern online platform that allows users to discover, compare, and instantly book sports venues such as cricket turfs, football grounds, badminton courts, tennis courts, basketball courts, and more.
+                BookMyPlay is a modern online platform that allows users to discover, compare, and book sports venues instantly.
               </p>
             </div>
           </div>
@@ -46,13 +69,23 @@ function About() {
       {/* Who We Are Section */}
       <section className="who-we-are-section">
         <div className="container">
-          <div className="row justify-content-center text-center">
-            <div className="col-lg-9">
+          <div className="row align-items-center justify-content-center">
+            <div className={s.imageUrl ? "col-lg-6 text-start" : "col-lg-9 text-center"}>
               <h2 className="section-title">Who We Are</h2>
               <p className="fs-5 text-muted leading-relaxed mt-3">
-                BookMyPlay connects sports enthusiasts with trusted venue owners through a seamless online booking platform. Our goal is to simplify sports venue discovery, enable real-time slot booking, and help venue owners efficiently manage their facilities and reservations.
+                {s.description}
               </p>
             </div>
+            {s.imageUrl && (
+              <div className="col-lg-5 offset-lg-1 mt-4 mt-lg-0 text-center">
+                <img 
+                  src={s.imageUrl} 
+                  alt="About Us" 
+                  className="img-fluid rounded-4 shadow" 
+                  style={{ maxHeight: "350px", objectFit: "cover", width: "100%" }} 
+                />
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -263,7 +296,7 @@ function About() {
                 </div>
                 <h3 className="mv-card-title">Mission</h3>
                 <p className="mv-card-text">
-                  Make sports accessible through fast and reliable venue booking.
+                  {s.mission}
                 </p>
               </div>
             </div>
@@ -275,7 +308,7 @@ function About() {
                 </div>
                 <h3 className="mv-card-title">Vision</h3>
                 <p className="mv-card-text">
-                  Become India's most trusted sports venue booking platform.
+                  {s.vision}
                 </p>
               </div>
             </div>
@@ -287,7 +320,7 @@ function About() {
                 </div>
                 <h3 className="mv-card-title">Community</h3>
                 <p className="mv-card-text">
-                  Encourage healthy lifestyles by making sports more accessible.
+                  {s.companyValues}
                 </p>
               </div>
             </div>

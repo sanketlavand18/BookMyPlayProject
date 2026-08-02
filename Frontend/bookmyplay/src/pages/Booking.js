@@ -115,6 +115,40 @@ function Booking() {
         }
     };
 
+    const refreshSlots = async () => {
+        try {
+            const slotsRes = await getSlotsByVenue(id);
+            const todayStr = new Date().toISOString().split("T")[0];
+            const freeSlots = (slotsRes.data || []).filter(
+                (slot) => !slot.booked && slot.slotDate >= todayStr
+            );
+            setSlots(freeSlots);
+        } catch (error) {
+            console.error("Error refreshing slots:", error);
+        }
+    };
+
+    const extractErrorMessage = (error) => {
+        if (error.response && error.response.data) {
+            const data = error.response.data;
+            if (typeof data === "string") {
+                return data;
+            }
+            if (typeof data === "object") {
+                if (data.message && typeof data.message === "string") {
+                    return data.message;
+                }
+                if (data.error && typeof data.error === "string") {
+                    return data.error;
+                }
+            }
+        }
+        if (error.message && typeof error.message === "string") {
+            return error.message;
+        }
+        return "This slot is no longer available. Please choose another slot.";
+    };
+
     const handleSlotSelect = (slot) => {
         setSelectedSlot(slot);
         setBooking(prev => ({
@@ -238,12 +272,34 @@ function Booking() {
             rzp.open();
         } catch (error) {
             console.error(error);
-            await window.Swal.fire({
-                icon: "error",
-                title: "Booking Failed",
-                text: error.response?.data?.message || error.response?.data || "Booking transaction failed.",
-                confirmButtonText: "OK"
-            });
+            const rawErrorMsg = extractErrorMessage(error);
+            const isConflict = rawErrorMsg.toLowerCase().includes("already booked") || rawErrorMsg.toLowerCase().includes("booked");
+
+            if (isConflict) {
+                await window.Swal.fire({
+                    icon: "error",
+                    title: "Slot Already Booked",
+                    text: "This slot has already been booked by another user. Please select another available slot.",
+                    confirmButtonText: "OK"
+                });
+            } else {
+                await window.Swal.fire({
+                    icon: "error",
+                    title: "Booking Failed",
+                    text: rawErrorMsg,
+                    confirmButtonText: "OK"
+                });
+            }
+
+            setSelectedSlot(null);
+            setBooking(prev => ({
+                ...prev,
+                slotId: "",
+                bookingDate: "",
+                startTime: "",
+                endTime: ""
+            }));
+            await refreshSlots();
         } finally {
             setLoading(false);
         }

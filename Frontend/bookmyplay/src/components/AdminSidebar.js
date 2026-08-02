@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import logo from "../assets/images/logo.png";
+import "../css/Login.css";
 import {
     FaChartPie,
     FaUser,
-    FaLock,
     FaUsers,
     FaStore,
     FaFutbol,
@@ -14,14 +15,12 @@ import {
     FaClipboardList,
     FaStar,
     FaGift,
-    FaLifeRing,
-    FaHistory,
     FaCalendarAlt,
     FaCog,
-    FaGlobe,
     FaFileExport,
     FaSignOutAlt,
-    FaTimes
+    FaTimes,
+    FaInfoCircle
 } from "react-icons/fa";
 
 function AdminSidebar() {
@@ -77,34 +76,37 @@ function AdminSidebar() {
     const menuItems = [
         { path: "/admin/dashboard", label: "Dashboard", icon: <FaChartPie /> },
         { path: "/admin/profile", label: "My Profile", icon: <FaUser />, exact: true },
-        { path: "/admin/profile", label: "Change Password", icon: <FaLock />, search: "?tab=password" },
         { path: "/admin/users", label: "Manage Users", icon: <FaUsers /> },
         { path: "/admin/vendors", label: "Manage Vendors", icon: <FaStore /> },
         { path: "/admin/venues", label: "Manage Venues", icon: <FaFutbol /> },
-        { path: "/admin/categories", label: "Manage Categories", icon: <FaTags /> },
+        { path: "/admin/categories", label: "Sports Categories", icon: <FaTags /> },
         { path: "/admin/bookings", label: "Manage Bookings", icon: <FaCalendarCheck /> },
         { path: "/admin/payments", label: "Manage Payments", icon: <FaCreditCard /> },
         { path: "/admin/subscription-payments", label: "Subscription Payments", icon: <FaMoneyCheckAlt /> },
         { path: "/admin/subscriptions", label: "Subscription Plans", icon: <FaClipboardList /> },
         { path: "/admin/reviews", label: "Manage Reviews", icon: <FaStar /> },
         { path: "/admin/coupons", label: "Manage Coupons", icon: <FaGift /> },
-        { path: "/admin/tickets", label: "Support Tickets", icon: <FaLifeRing /> },
-        { path: "/admin/audit-logs", label: "Audit Activity", icon: <FaHistory /> },
         { path: "/admin/calendar", label: "Booking Calendar", icon: <FaCalendarAlt /> },
         { path: "/admin/contact-settings", label: "Contact Page Configuration", icon: <FaCog /> },
-        { path: "/admin/settings", label: "Website CMS Settings", icon: <FaGlobe /> },
+        { path: "/admin/about-settings", label: "About Page", icon: <FaInfoCircle /> },
         { path: "/admin/reports", label: "Export Reports", icon: <FaFileExport /> }
     ];
 
     return (
         <div className="admin-sidebar bg-dark text-white p-3 d-flex flex-column shadow-lg">
-            <div className="d-flex justify-content-between align-items-center mb-4 py-2 border-bottom border-secondary">
-                <div>
-                    <h4 className="fw-bold text-success mb-1">BookMyPlay</h4>
-                    <span className="text-muted small text-uppercase fw-semibold" style={{ letterSpacing: "1px" }}>Admin Panel</span>
+            <div className="d-flex justify-content-between align-items-center mb-3 py-2 border-bottom border-secondary position-relative w-100">
+                <div className="w-100 d-flex flex-column align-items-center justify-content-center text-center">
+                    <div className="d-flex justify-content-center mb-2">
+                        <div className="logo-container logo-auth" style={{ width: "80px", height: "80px" }}>
+                            <img src={logo} alt="Book My Play" className="app-logo" />
+                        </div>
+                    </div>
+                    <h2 className="login-title mb-1" style={{ fontSize: "1.25rem" }}>BookMyPlay</h2>
+                    <span className="login-subtitle text-uppercase fw-semibold" style={{ letterSpacing: "1px", fontSize: "0.65rem", marginBottom: "0px" }}>Admin Panel</span>
                 </div>
                 <button 
-                    className="btn btn-link text-white-50 d-md-none p-0 border-0 shadow-none"
+                    className="btn btn-link text-white-50 d-md-none p-0 border-0 shadow-none position-absolute"
+                    style={{ right: "10px", top: "10px" }}
                     onClick={handleClose}
                 >
                     <FaTimes className="fs-4" />

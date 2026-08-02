@@ -18,11 +18,16 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    public BookingResponse createBooking(
+    public ResponseEntity<?> createBooking(
             @RequestBody CreateBookingRequest request) {
-
-        return bookingService.createBooking(request);
-
+        try {
+            BookingResponse response = bookingService.createBooking(request);
+            return ResponseEntity.ok(response);
+        } catch (com.bookmyplay.exception.SlotAlreadyBookedException ex) {
+            java.util.Map<String, String> error = new java.util.HashMap<>();
+            error.put("message", ex.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(error);
+        }
     }
 
     @GetMapping("/user/{userId}")

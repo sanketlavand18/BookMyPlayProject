@@ -33,7 +33,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
         categoryRepository.findByCategoryNameIgnoreCase(category.getCategoryName().trim())
             .ifPresent(existing -> {
-                throw new RuntimeException("Category already exists.");
+                throw new RuntimeException("This sport category already exists.");
             });
         
         category.setCategoryName(category.getCategoryName().trim());

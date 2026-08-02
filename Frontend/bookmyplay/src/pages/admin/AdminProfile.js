@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import AdminSidebar from "../../components/AdminSidebar";
 import AdminNavbar from "../../components/AdminNavbar";
-import { FaLock, FaCamera, FaSpinner, FaUserCircle } from "react-icons/fa";
+import { FaCamera, FaSpinner, FaUserCircle, FaEye, FaEyeSlash, FaLock } from "react-icons/fa";
 
 const AVATAR_PRESETS = [
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
@@ -27,31 +27,112 @@ function AdminProfile() {
   const [profileError, setProfileError] = useState("");
 
   const [passForm, setPassForm] = useState({
-    oldPassword: "",
+    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
-  const [passLoading, setPassLoading] = useState(false);
   const [passSuccess, setPassSuccess] = useState("");
   const [passError, setPassError] = useState("");
+  const [passLoading, setPassLoading] = useState(false);
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const [strength, setStrength] = useState({
+    score: 0,
+    label: "Empty",
+    color: "muted"
+  });
+
+  const checkPasswordStrength = (pwd) => {
+    let score = 0;
+    if (!pwd) {
+      setStrength({ score: 0, label: "Empty", color: "muted" });
+      return;
+    }
+    if (pwd.length >= 8) score += 1;
+    if (/[A-Z]/.test(pwd)) score += 1;
+    if (/[a-z]/.test(pwd)) score += 1;
+    if (/[0-9]/.test(pwd)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
+
+    let label = "Very Weak";
+    let color = "danger";
+    if (score === 5) {
+      label = "Very Strong";
+      color = "success";
+    } else if (score === 4) {
+      label = "Strong";
+      color = "success";
+    } else if (score === 3) {
+      label = "Medium";
+      color = "warning";
+    } else if (score === 2) {
+      label = "Weak";
+      color = "warning";
+    }
+
+    setStrength({ score, label, color });
+  };
+
+  const handlePassChange = (field, val) => {
+    setPassForm(prev => {
+      const updated = { ...prev, [field]: val };
+      if (field === "newPassword") {
+        checkPasswordStrength(val);
+      }
+      return updated;
+    });
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setPassSuccess("");
+    setPassError("");
+
+    if (!passForm.currentPassword) {
+      setPassError("Current password is required.");
+      return;
+    }
+    if (passForm.newPassword.length < 8) {
+      setPassError("New password must be at least 8 characters long.");
+      return;
+    }
+    if (strength.score < 3) {
+      setPassError("Password is too weak. Ensure it has at least 8 characters, uppercase, lowercase, numbers, and special characters.");
+      return;
+    }
+    if (passForm.newPassword !== passForm.confirmPassword) {
+      setPassError("New passwords do not match.");
+      return;
+    }
+
+    setPassLoading(true);
+    try {
+      await axios.put(`http://localhost:8080/api/users/change-password?userId=${userSession.id}`, {
+        oldPassword: passForm.currentPassword,
+        newPassword: passForm.newPassword
+      });
+      setPassSuccess("Password reset successfully!");
+      setPassForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+      setStrength({ score: 0, label: "Empty", color: "muted" });
+    } catch (err) {
+      setPassError(err.response?.data || "Failed to reset password. Verify your current password.");
+    } finally {
+      setPassLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (userSession.id) {
       loadProfile();
     }
   }, [userSession.id]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("tab") === "password") {
-      const el = document.getElementById("change-password-section");
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      }
-    }
-  }, [window.location.search]);
 
   const loadProfile = async () => {
     setLoading(true);
@@ -96,31 +177,6 @@ function AdminProfile() {
       setProfileError(err.response?.data || "Failed to update profile.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    setPassSuccess("");
-    setPassError("");
-
-    if (passForm.newPassword !== passForm.confirmPassword) {
-      setPassError("New passwords do not match.");
-      return;
-    }
-
-    setPassLoading(true);
-    try {
-      await axios.put(`http://localhost:8080/api/users/change-password?userId=${userSession.id}`, {
-        oldPassword: passForm.oldPassword,
-        newPassword: passForm.newPassword
-      });
-      setPassSuccess("Password updated successfully!");
-      setPassForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err) {
-      setPassError(err.response?.data || "Failed to change password.");
-    } finally {
-      setPassLoading(false);
     }
   };
 
@@ -270,51 +326,115 @@ function AdminProfile() {
                     </form>
                   </div>
 
-                  {/* Change Password Card */}
-                  <div id="change-password-section" className="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                  {/* Reset Password Card */}
+                  <div className="card border-0 shadow-sm p-4 rounded-4 bg-white mt-4">
                     <h4 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
-                      <FaLock className="text-danger" /> Change Account Password
+                      <FaLock className="text-success" /> Reset Account Password
                     </h4>
 
                     {passSuccess && <div className="alert alert-success rounded-3">{passSuccess}</div>}
                     {passError && <div className="alert alert-danger rounded-3">{passError}</div>}
 
-                    <form onSubmit={handlePasswordChange}>
+                    <form onSubmit={handleResetPassword}>
                       <div className="row g-3">
+                        {/* Current Password */}
                         <div className="col-12">
-                          <label className="form-label fw-semibold text-muted">Old Password</label>
-                          <input
-                            type="password"
-                            className="form-control rounded-3"
-                            value={passForm.oldPassword}
-                            onChange={e => setPassForm(prev => ({ ...prev, oldPassword: e.target.value }))}
-                            required
-                          />
+                          <label className="form-label fw-semibold text-muted">Current Password</label>
+                          <div className="position-relative">
+                            <input
+                              type={showCurrent ? "text" : "password"}
+                              className="form-control rounded-3 pe-5"
+                              value={passForm.currentPassword}
+                              onChange={e => handlePassChange("currentPassword", e.target.value)}
+                              required
+                            />
+                            <button
+                              type="button"
+                              className="btn position-absolute top-50 end-0 translate-middle-y text-muted border-0 bg-transparent pe-3 shadow-none"
+                              onClick={() => setShowCurrent(!showCurrent)}
+                            >
+                              {showCurrent ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                          </div>
                         </div>
+
+                        {/* New Password */}
                         <div className="col-md-6">
                           <label className="form-label fw-semibold text-muted">New Password</label>
-                          <input
-                            type="password"
-                            className="form-control rounded-3"
-                            value={passForm.newPassword}
-                            onChange={e => setPassForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                            required
-                          />
+                          <div className="position-relative">
+                            <input
+                              type={showNew ? "text" : "password"}
+                              className="form-control rounded-3 pe-5"
+                              value={passForm.newPassword}
+                              onChange={e => handlePassChange("newPassword", e.target.value)}
+                              required
+                            />
+                            <button
+                              type="button"
+                              className="btn position-absolute top-50 end-0 translate-middle-y text-muted border-0 bg-transparent pe-3 shadow-none"
+                              onClick={() => setShowNew(!showNew)}
+                            >
+                              {showNew ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                          </div>
+
+                          {/* Password Strength Indicator */}
+                          {passForm.newPassword && (
+                            <div className="mt-2">
+                              <div className="d-flex justify-content-between align-items-center mb-1">
+                                <span className="small text-muted">Strength:</span>
+                                <span className={`small fw-bold text-${strength.color}`}>{strength.label}</span>
+                              </div>
+                              <div className="progress" style={{ height: "6px" }}>
+                                <div
+                                  className={`progress-bar bg-${strength.color}`}
+                                  role="progressbar"
+                                  style={{ width: `${(strength.score / 5) * 100}%` }}
+                                  aria-valuenow={strength.score}
+                                  aria-valuemin="0"
+                                  aria-valuemax="5"
+                                ></div>
+                              </div>
+                              <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                Use 8+ characters with uppercase, lowercase, numbers, and symbols.
+                              </span>
+                            </div>
+                          )}
                         </div>
+
+                        {/* Confirm Password */}
                         <div className="col-md-6">
                           <label className="form-label fw-semibold text-muted">Confirm New Password</label>
-                          <input
-                            type="password"
-                            className="form-control rounded-3"
-                            value={passForm.confirmPassword}
-                            onChange={e => setPassForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                            required
-                          />
+                          <div className="position-relative">
+                            <input
+                              type={showConfirm ? "text" : "password"}
+                              className="form-control rounded-3 pe-5"
+                              value={passForm.confirmPassword}
+                              onChange={e => handlePassChange("confirmPassword", e.target.value)}
+                              required
+                            />
+                            <button
+                              type="button"
+                              className="btn position-absolute top-50 end-0 translate-middle-y text-muted border-0 bg-transparent pe-3 shadow-none"
+                              onClick={() => setShowConfirm(!showConfirm)}
+                            >
+                              {showConfirm ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                          </div>
+                          {passForm.confirmPassword && passForm.newPassword !== passForm.confirmPassword && (
+                            <span className="text-danger small mt-1 d-block">
+                              Passwords do not match.
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <button type="submit" className="btn btn-danger px-4 py-2 mt-4 rounded-pill fw-bold" disabled={passLoading}>
-                        {passLoading ? "Changing..." : "Update Password"}
+                      <button
+                        type="submit"
+                        className="btn btn-success px-4 py-2 mt-4 rounded-pill fw-bold"
+                        disabled={passLoading || (passForm.confirmPassword && passForm.newPassword !== passForm.confirmPassword)}
+                      >
+                        {passLoading ? "Resetting..." : "Reset Password"}
                       </button>
                     </form>
                   </div>

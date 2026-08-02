@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -33,8 +32,7 @@ public class SlotServiceImpl implements SlotService {
         if (date.isBefore(today) || date.isAfter(maxDate)) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "Booking date must be within the rolling 7-day window."
-            );
+                    "Booking date must be within the rolling 7-day window.");
         }
 
         List<Slot> dbSlots = slotRepository.findByVenueIdAndSlotDate(venueId, date);
@@ -48,9 +46,12 @@ public class SlotServiceImpl implements SlotService {
             Integer duration = venue.getSlotDuration();
 
             // Fallbacks
-            if (openLocal == null) openLocal = LocalTime.of(7, 0);
-            if (closeLocal == null) closeLocal = LocalTime.of(19, 0);
-            if (duration == null) duration = 60;
+            if (openLocal == null)
+                openLocal = LocalTime.of(7, 0);
+            if (closeLocal == null)
+                closeLocal = LocalTime.of(19, 0);
+            if (duration == null)
+                duration = 60;
 
             generateSlotsForDate(venue, date, openLocal, closeLocal, duration);
             dbSlots = slotRepository.findByVenueIdAndSlotDate(venueId, date);
@@ -108,7 +109,8 @@ public class SlotServiceImpl implements SlotService {
         slotRepository.deleteFutureUnbookedSlots(venueId, LocalDate.now());
     }
 
-    private void generateSlotsForDate(Venue venue, LocalDate date, LocalTime openLocal, LocalTime closeLocal, int duration) {
+    private void generateSlotsForDate(Venue venue, LocalDate date, LocalTime openLocal, LocalTime closeLocal,
+            int duration) {
         List<Slot> existing = slotRepository.findByVenueIdAndSlotDate(venue.getId(), date);
 
         LocalTime current = openLocal;
@@ -121,7 +123,8 @@ public class SlotServiceImpl implements SlotService {
             final LocalTime finalCurrent = current;
             final LocalTime finalNext = next;
 
-            // Check if there is an overlapping slot in database (overlap: sStart < finalNext && finalCurrent < sEnd)
+            // Check if there is an overlapping slot in database (overlap: sStart <
+            // finalNext && finalCurrent < sEnd)
             boolean hasOverlap = existing.stream().anyMatch(s -> {
                 LocalTime sStart = s.getStartTime();
                 LocalTime sEnd = s.getEndTime();

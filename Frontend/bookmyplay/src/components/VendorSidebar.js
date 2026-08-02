@@ -1,4 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import logo from "../assets/images/logo.png";
+import "../css/Login.css";
 import {
     FaHome,
     FaUser,
@@ -36,9 +38,7 @@ function VendorSidebar({ mobileOpen, onCloseSidebar }) {
         { path: "/vendor", label: "Dashboard", icon: <FaHome /> },
         { path: "/vendor/profile", label: "My Profile", icon: <FaUser /> },
         { path: "/vendor/venues", label: "My Venues", icon: <FaBuilding /> },
-        { path: "/vendor/add", label: "Add Venue", icon: <FaPlus /> },
         { path: "/vendor/bookings", label: "Venue Bookings", icon: <FaCalendarAlt /> },
-        { path: "/vendor/bookings/history", label: "Booking History", icon: <FaHistory /> },
         { path: "/vendor/earnings", label: "Earnings", icon: <FaRupeeSign /> },
         { path: "/vendor/reviews", label: "Reviews", icon: <FaStar /> },
         { path: "/vendor/analytics", label: "Analytics", icon: <FaChartBar /> },
@@ -74,16 +74,18 @@ function VendorSidebar({ mobileOpen, onCloseSidebar }) {
             )}
 
             <div className={sidebarClass} style={sidebarStyle}>
-                {/* Brand Logo Header */}
-                <div className="d-flex align-items-center justify-content-between mb-4 py-2 border-bottom border-secondary">
-                    <div>
-                        <h4 className="fw-bold text-success mb-0">BookMyPlay</h4>
-                        <span className="text-muted small text-uppercase fw-semibold" style={{ letterSpacing: "1px", fontSize: "0.75rem" }}>
-                            Vendor Panel
-                        </span>
+                <div className="d-flex justify-content-between align-items-center mb-3 py-2 border-bottom border-secondary position-relative w-100">
+                    <div className="w-100 d-flex flex-column align-items-center justify-content-center text-center">
+                        <div className="d-flex justify-content-center mb-2">
+                            <div className="logo-container logo-auth" style={{ width: "80px", height: "80px" }}>
+                                <img src={logo} alt="Book My Play" className="app-logo" />
+                            </div>
+                        </div>
+                        <h2 className="login-title mb-1" style={{ fontSize: "1.25rem" }}>BookMyPlay</h2>
+                        <span className="login-subtitle text-uppercase fw-semibold" style={{ letterSpacing: "1px", fontSize: "0.65rem", marginBottom: "0px" }}>Vendor Panel</span>
                     </div>
                     {mobileOpen && (
-                        <button className="btn btn-dark btn-sm d-md-none p-1 text-white border-0" onClick={onCloseSidebar}>
+                        <button className="btn btn-dark btn-sm d-md-none p-1 text-white border-0 position-absolute" style={{ right: "10px", top: "10px" }} onClick={onCloseSidebar}>
                             <FaTimes className="fs-5" />
                         </button>
                     )}

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { addVenue } from "../services/venueService";
-import { getAllCategories, createCategory } from "../services/categoryService";
+import { getAllCategories } from "../services/categoryService";
+import axios from "axios";
 import VendorSidebar from "../components/VendorSidebar";
 import VendorNavbar from "../components/VendorNavbar";
 import {
@@ -36,13 +37,11 @@ function AddVenue() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [categories, setCategories] = useState([]);
 
-    // Search and dynamic category modal states
-    const [categorySearch, setCategorySearch] = useState("");
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
-    const [newCategoryName, setNewCategoryName] = useState("");
-    const [newCategoryDesc, setNewCategoryDesc] = useState("");
-    const [newCategoryIcon, setNewCategoryIcon] = useState("");
-    const [savingCategory, setSavingCategory] = useState(false);
+    // Search and dynamic sport request modal states
+    const [showSportRequestModal, setShowSportRequestModal] = useState(false);
+    const [requestSportName, setRequestSportName] = useState("");
+    const [requestSportDesc, setRequestSportDesc] = useState("");
+    const [submittingSportRequest, setSubmittingSportRequest] = useState(false);
 
     // Subscription status
     const [subStatus, setSubStatus] = useState("ACTIVE");
@@ -90,6 +89,18 @@ function AddVenue() {
     // Contact Information
     const [contact, setContact] = useState({
         person: "",
+        phone: "",
+        altPhone: "",
+        email: ""
+    });
+
+    const [touchedFields, setTouchedFields] = useState({
+        phone: false,
+        altPhone: false,
+        email: false
+    });
+
+    const [contactErrors, setContactErrors] = useState({
         phone: "",
         altPhone: "",
         email: ""
@@ -143,52 +154,60 @@ function AddVenue() {
 
     const loadCategories = async () => {
         try {
-            const response = await getAllCategories();
+            const response = await axios.get("http://localhost:8080/api/categories");
             setCategories(response.data || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
         }
     };
 
-    const handleSaveCategory = async (e) => {
+    const handleAddSport = async (e) => {
         e.preventDefault();
-        if (!newCategoryName.trim()) {
+        if (!requestSportName.trim()) {
             window.Swal.fire({
                 icon: "warning",
                 title: "Validation Error",
-                text: "Category name is required.",
+                text: "Sport Name is required.",
                 confirmButtonColor: "#198754"
             });
             return;
         }
 
-        setSavingCategory(true);
+        setSubmittingSportRequest(true);
         try {
-            const res = await createCategory({
-                categoryName: newCategoryName.trim(),
-                description: newCategoryDesc.trim() || null,
-                icon: newCategoryIcon.trim() || null
+            const res = await axios.post(`http://localhost:8080/api/categories?vendorId=${user.id}`, {
+                categoryName: requestSportName.trim(),
+                description: requestSportDesc.trim() || null
             });
 
-            await window.Swal.fire({
-                icon: "success",
-                title: "Category Created!",
-                text: `Category "${res.data.categoryName}" has been successfully added.`,
-                confirmButtonColor: "#198754",
-                timer: 2000
+            // Show Toast Alert
+            const Toast = window.Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', window.Swal.stopTimer)
+                    toast.addEventListener('mouseleave', window.Swal.resumeTimer)
+                }
             });
 
-            setShowCategoryModal(false);
-            setNewCategoryName("");
-            setNewCategoryDesc("");
-            setNewCategoryIcon("");
+            Toast.fire({
+                icon: 'success',
+                title: 'Sport category added successfully.'
+            });
 
-            // Reload all categories and automatically select new category
-            const catsRes = await getAllCategories();
-            const list = catsRes.data || [];
+            setShowSportRequestModal(false);
+            setRequestSportName("");
+            setRequestSportDesc("");
+
+            // Refresh the categories dropdown automatically
+            const sportsRes = await axios.get("http://localhost:8080/api/categories");
+            const list = sportsRes.data || [];
             setCategories(list);
-            
-            // Set category ID
+
+            // Select the newly created category automatically
             setVenue(prev => ({
                 ...prev,
                 categoryId: res.data.id
@@ -196,14 +215,15 @@ function AddVenue() {
 
         } catch (err) {
             console.error(err);
+            const errMsg = err.response?.data || "Failed to add sport category.";
             window.Swal.fire({
                 icon: "error",
-                title: "Creation Failed",
-                text: err.response?.data?.message || err.response?.data || "Failed to create category. A duplicate might exist.",
+                title: "Failed to Add Sport",
+                text: errMsg.includes("exists") ? "This sport category already exists." : errMsg,
                 confirmButtonColor: "#dc3545"
             });
         } finally {
-            setSavingCategory(false);
+            setSubmittingSportRequest(false);
         }
     };
 
@@ -221,11 +241,74 @@ function AddVenue() {
         });
     };
 
+    const validateField = (name, value) => {
+        let error = "";
+        const val = (value || "").trim();
+
+        if (name === "phone") {
+            if (!val) {
+                error = "Contact number is required.";
+            } else if (!/^\d{10}$/.test(val)) {
+                error = "Contact number must be exactly 10 digits.";
+            }
+        } else if (name === "altPhone") {
+            if (val && !/^\d{10}$/.test(val)) {
+                error = "Alternate number must be exactly 10 digits.";
+            }
+        } else if (name === "email") {
+            if (!val) {
+                error = "Email address is required.";
+            } else {
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                if (!emailRegex.test(val)) {
+                    error = "Please enter a valid email address.";
+                }
+            }
+        }
+
+        setContactErrors(prev => ({
+            ...prev,
+            [name]: error
+        }));
+
+        return error;
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        if (name === "phone" || name === "altPhone" || name === "email") {
+            setTouchedFields(prev => ({
+                ...prev,
+                [name]: true
+            }));
+            validateField(name, value);
+        }
+    };
+
     const handleContactChange = (e) => {
-        setContact({
-            ...contact,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+        if (name === "phone" || name === "altPhone") {
+            const numericValue = value.replace(/\D/g, "");
+            if (numericValue.length <= 10) {
+                setContact(prev => {
+                    const updated = { ...prev, [name]: numericValue };
+                    if (touchedFields[name]) {
+                        validateField(name, numericValue);
+                    }
+                    return updated;
+                });
+            }
+        } else {
+            setContact(prev => {
+                const updated = { ...prev, [name]: value };
+                if (name === "email") {
+                    if (touchedFields.email) {
+                        validateField("email", value);
+                    }
+                }
+                return updated;
+            });
+        }
     };
 
     const handleFileChange = (e) => {
@@ -357,12 +440,20 @@ function AddVenue() {
             return "Slot duration is required.";
         }
 
-        if (contact.phone && !/^\d{10}$/.test(contact.phone.trim())) {
-            return "Contact phone number must be exactly 10 digits.";
-        }
-        if (contact.altPhone && !/^\d{10}$/.test(contact.altPhone.trim())) {
-            return "Alternate phone number must be exactly 10 digits.";
-        }
+        // Set all fields to touched to display errors inline
+        setTouchedFields({
+            phone: true,
+            altPhone: true,
+            email: true
+        });
+
+        const phoneErr = validateField("phone", contact.phone);
+        const altPhoneErr = validateField("altPhone", contact.altPhone);
+        const emailErr = validateField("email", contact.email);
+
+        if (phoneErr) return phoneErr;
+        if (altPhoneErr) return altPhoneErr;
+        if (emailErr) return emailErr;
 
         if (files.length === 0) {
             return "Please upload at least 1 image for the venue gallery.";
@@ -567,12 +658,22 @@ function AddVenue() {
                                                         required
                                                     >
                                                         <option value="">Select Category</option>
-                                                        {categories.map((category) => (
+                                                                                        {categories.map((category) => (
                                                             <option key={category.id} value={category.id}>
-                                                                {category.categoryName}
+                                                                {category.sportName || category.categoryName}
                                                             </option>
                                                         ))}
                                                     </select>
+                                                    <div className="mt-2 small">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowSportRequestModal(true)}
+                                                            className="btn btn-link text-success p-0 border-0 align-baseline fw-semibold text-decoration-none"
+                                                            style={{ fontSize: "0.85rem" }}
+                                                        >
+                                                            + Add New Sport
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="col-12">
                                                     <label className="form-label small text-secondary fw-semibold">Description * (Minimum 30 characters)</label>
@@ -988,34 +1089,46 @@ function AddVenue() {
                                                     <label className="form-label small text-secondary fw-semibold">Contact Number</label>
                                                     <input
                                                         type="text"
-                                                        className="form-control rounded-3"
+                                                        className={`form-control rounded-3 ${touchedFields.phone && contactErrors.phone ? "is-invalid" : ""}`}
                                                         name="phone"
                                                         placeholder="10-digit number"
                                                         value={contact.phone}
                                                         onChange={handleContactChange}
+                                                        onBlur={handleBlur}
                                                     />
+                                                    {touchedFields.phone && contactErrors.phone && (
+                                                        <div className="invalid-feedback">{contactErrors.phone}</div>
+                                                    )}
                                                 </div>
                                                 <div className="col-md-6">
                                                     <label className="form-label small text-secondary fw-semibold">Alternate Number</label>
                                                     <input
                                                         type="text"
-                                                        className="form-control rounded-3"
+                                                        className={`form-control rounded-3 ${touchedFields.altPhone && contactErrors.altPhone ? "is-invalid" : ""}`}
                                                         name="altPhone"
                                                         placeholder="10-digit number"
                                                         value={contact.altPhone}
                                                         onChange={handleContactChange}
+                                                        onBlur={handleBlur}
                                                     />
+                                                    {touchedFields.altPhone && contactErrors.altPhone && (
+                                                        <div className="invalid-feedback">{contactErrors.altPhone}</div>
+                                                    )}
                                                 </div>
                                                 <div className="col-md-6">
                                                     <label className="form-label small text-secondary fw-semibold">Email Address</label>
                                                     <input
                                                         type="email"
-                                                        className="form-control rounded-3"
+                                                        className={`form-control rounded-3 ${touchedFields.email && contactErrors.email ? "is-invalid" : ""}`}
                                                         name="email"
                                                         placeholder="manager@example.com"
                                                         value={contact.email}
                                                         onChange={handleContactChange}
+                                                        onBlur={handleBlur}
                                                     />
+                                                    {touchedFields.email && contactErrors.email && (
+                                                        <div className="invalid-feedback">{contactErrors.email}</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1065,56 +1178,46 @@ function AddVenue() {
                 </div>
             </div>
 
-            {/* Dynamic Category Creation Bootstrap Modal */}
-            {showCategoryModal && (
+            {/* Add New Sport Bootstrap Modal */}
+            {showSportRequestModal && (
                 <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} tabIndex="-1">
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content rounded-4 border-0 shadow">
                             <div className="modal-header border-bottom">
-                                <h5 className="modal-title fw-bold">Add New Category</h5>
-                                <button type="button" className="btn-close" onClick={() => setShowCategoryModal(false)} aria-label="Close"></button>
+                                <h5 className="modal-title fw-bold">Add New Sport</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowSportRequestModal(false)} aria-label="Close"></button>
                             </div>
-                            <form onSubmit={handleSaveCategory}>
+                            <form onSubmit={handleAddSport}>
                                 <div className="modal-body">
                                     <div className="mb-3">
-                                        <label className="form-label small text-secondary fw-semibold">Category Name *</label>
+                                        <label className="form-label small text-secondary fw-semibold">Sport Name *</label>
                                         <input
                                             type="text"
                                             className="form-control rounded-3"
-                                            value={newCategoryName}
-                                            onChange={(e) => setNewCategoryName(e.target.value)}
-                                            placeholder="e.g. Cricket, Football"
+                                            value={requestSportName}
+                                            onChange={(e) => setRequestSportName(e.target.value)}
+                                            placeholder="e.g. Pickleball"
                                             required
                                         />
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label small text-secondary fw-semibold">Description (Optional)</label>
+                                        <label className="form-label small text-secondary fw-semibold">Sport Description (Optional)</label>
                                         <textarea
                                             className="form-control rounded-3"
-                                            value={newCategoryDesc}
-                                            onChange={(e) => setNewCategoryDesc(e.target.value)}
-                                            placeholder="Category brief details..."
+                                            value={requestSportDesc}
+                                            onChange={(e) => setRequestSportDesc(e.target.value)}
+                                            placeholder="Brief description about the sport specifications..."
                                             rows="3"
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label small text-secondary fw-semibold">Icon (Optional)</label>
-                                        <input
-                                            type="text"
-                                            className="form-control rounded-3"
-                                            value={newCategoryIcon}
-                                            onChange={(e) => setNewCategoryIcon(e.target.value)}
-                                            placeholder="e.g. FaRunning, FaCricket"
                                         />
                                     </div>
                                 </div>
                                 <div className="modal-footer border-top">
-                                    <button type="button" className="btn btn-outline-secondary rounded-pill px-3" onClick={() => setShowCategoryModal(false)}>
+                                    <button type="button" className="btn btn-outline-secondary rounded-pill px-3" onClick={() => setShowSportRequestModal(false)}>
                                         Cancel
                                     </button>
-                                    <button type="submit" className="btn btn-success rounded-pill px-4 fw-bold" style={{ backgroundColor: "#198754" }} disabled={savingCategory}>
-                                        {savingCategory ? <span className="spinner-border spinner-border-sm me-2" /> : null}
-                                        Create Category
+                                    <button type="submit" className="btn btn-success rounded-pill px-4 fw-bold" style={{ backgroundColor: "#198754" }} disabled={submittingSportRequest}>
+                                        {submittingSportRequest ? <span className="spinner-border spinner-border-sm me-2" /> : null}
+                                        Save
                                     </button>
                                 </div>
                             </form>

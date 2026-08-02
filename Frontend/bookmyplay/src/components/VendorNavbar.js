@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { FaBell, FaCircle, FaUserCircle, FaBars } from "react-icons/fa";
 import { getUnreadNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/images/logo.png";
 
 function VendorNavbar({ onToggleSidebar }) {
   const location = useLocation();
@@ -50,11 +49,11 @@ function VendorNavbar({ onToggleSidebar }) {
   };
 
   return (
-    <nav className="navbar navbar-expand-md navbar-light bg-white border-bottom shadow-sm mb-4 px-4 py-3 sticky-top">
-      <div className="container-fluid d-flex justify-content-between align-items-center flex-wrap flex-md-nowrap gap-2">
+    <nav className="navbar navbar-expand navbar-light bg-white border-bottom shadow-sm mb-4 px-4 py-3 sticky-top">
+      <div className="container-fluid d-flex justify-content-between align-items-center">
         
-        {/* Left Side: Sidebar Toggle, Title, Navbar Toggler, and Links */}
-        <div className="d-flex align-items-center flex-wrap flex-md-nowrap gap-3 flex-grow-1">
+        {/* Left Side: Sidebar Toggle (mobile only), Vendor Console text, About, Contact */}
+        <div className="d-flex align-items-center gap-3">
           <button 
             className="btn btn-light d-md-none p-2 border shadow-none"
             onClick={onToggleSidebar}
@@ -63,49 +62,28 @@ function VendorNavbar({ onToggleSidebar }) {
             <FaBars className="fs-5 text-secondary" />
           </button>
           
-          <div className="d-flex align-items-center gap-2">
-            <div className="logo-container logo-navbar">
-              <img src={logo} alt="Book My Play" className="app-logo" />
-            </div>
-            <h4 className="fw-bold text-dark mb-0 d-none d-sm-block">Vendor Console</h4>
-          </div>
+          <h4 className="fw-bold text-dark mb-0">Vendor Console</h4>
           
-          <button 
-            className="navbar-toggler border-0 p-1 shadow-none ms-auto d-md-none" 
-            type="button" 
-            data-bs-toggle="collapse" 
-            data-bs-target="#vendorNavbarCollapse"
-            aria-controls="vendorNavbarCollapse" 
-            aria-expanded="false" 
-            aria-label="Toggle public navigation"
+          <Link 
+            to="/vendor/about" 
+            className={`nav-link py-1 px-2 rounded-3 text-decoration-none fw-semibold small ${
+              isActive("/vendor/about") 
+                ? "text-success fw-bold bg-light" 
+                : "text-secondary"
+            }`}
           >
-            <span className="navbar-toggler-icon" style={{ width: "1.2rem", height: "1.2rem" }}></span>
-          </button>
-
-          <div className="collapse navbar-collapse" id="vendorNavbarCollapse">
-            <div className="navbar-nav gap-2 gap-md-3 border-start-md ps-md-3 align-items-md-center w-100">
-              <Link 
-                to="/vendor/about" 
-                className={`nav-link py-1 px-2 rounded-3 text-decoration-none fw-semibold small ${
-                  isActive("/vendor/about") 
-                    ? "text-success fw-bold bg-light" 
-                    : "text-secondary"
-                }`}
-              >
-                About
-              </Link>
-              <Link 
-                to="/vendor/contact" 
-                className={`nav-link py-1 px-2 rounded-3 text-decoration-none fw-semibold small ${
-                  isActive("/vendor/contact") 
-                    ? "text-success fw-bold bg-light" 
-                    : "text-secondary"
-                }`}
-              >
-                Contact
-              </Link>
-            </div>
-          </div>
+            About
+          </Link>
+          <Link 
+            to="/vendor/contact" 
+            className={`nav-link py-1 px-2 rounded-3 text-decoration-none fw-semibold small ${
+              isActive("/vendor/contact") 
+                ? "text-success fw-bold bg-light" 
+                : "text-secondary"
+            }`}
+          >
+            Contact
+          </Link>
         </div>
 
         {/* Right Side Tools */}

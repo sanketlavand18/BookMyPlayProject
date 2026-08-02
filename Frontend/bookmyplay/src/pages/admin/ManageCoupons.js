@@ -15,7 +15,12 @@ function ManageCoupons() {
     discount: 10.0,
     expiryDate: "",
     usageLimit: 100,
-    status: "ACTIVE"
+    status: "ACTIVE",
+    title: "",
+    description: "",
+    minOrderAmount: 0.0,
+    validFrom: "",
+    termsAndConditions: ""
   });
 
   useEffect(() => {
@@ -35,7 +40,18 @@ function ManageCoupons() {
   };
 
   const handleOpenCreate = () => {
-    setForm({ couponCode: "", discount: 10.0, expiryDate: "", usageLimit: 100, status: "ACTIVE" });
+    setForm({ 
+      couponCode: "", 
+      discount: 10.0, 
+      expiryDate: "", 
+      usageLimit: 100, 
+      status: "ACTIVE",
+      title: "",
+      description: "",
+      minOrderAmount: 0.0,
+      validFrom: "",
+      termsAndConditions: ""
+    });
     setEditId(null);
     setShowModal(true);
   };
@@ -46,7 +62,12 @@ function ManageCoupons() {
       discount: c.discount,
       expiryDate: c.expiryDate || "",
       usageLimit: c.usageLimit || 100,
-      status: c.status
+      status: c.status,
+      title: c.title || "",
+      description: c.description || "",
+      minOrderAmount: c.minOrderAmount || 0.0,
+      validFrom: c.validFrom || "",
+      termsAndConditions: c.termsAndConditions || ""
     });
     setEditId(c.id);
     setShowModal(true);
@@ -188,7 +209,7 @@ function ManageCoupons() {
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)} />
               </div>
               <form onSubmit={handleSave}>
-                <div className="modal-body p-4">
+                <div className="modal-body p-4" style={{ maxHeight: "65vh", overflowY: "auto" }}>
                   <div className="mb-3">
                     <label className="form-label fw-semibold text-muted">Coupon Code</label>
                     <input
@@ -197,6 +218,28 @@ function ManageCoupons() {
                       value={form.couponCode}
                       onChange={e => setForm({ ...form, couponCode: e.target.value.toUpperCase() })}
                       placeholder="e.g. SUMMER50"
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold text-muted">Offer Title</label>
+                    <input
+                      type="text"
+                      className="form-control rounded-3"
+                      value={form.title}
+                      onChange={e => setForm({ ...form, title: e.target.value })}
+                      placeholder="e.g. Summer Special Bonanza"
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold text-muted">Description</label>
+                    <textarea
+                      className="form-control rounded-3"
+                      rows="2"
+                      value={form.description}
+                      onChange={e => setForm({ ...form, description: e.target.value })}
+                      placeholder="e.g. Get flat discount on your next turf booking."
                       required
                     />
                   </div>
@@ -226,13 +269,46 @@ function ManageCoupons() {
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="form-label fw-semibold text-muted">Expiry Date</label>
+                    <label className="form-label fw-semibold text-muted">Minimum Order Amount (INR)</label>
                     <input
-                      type="date"
+                      type="number"
                       className="form-control rounded-3"
-                      value={form.expiryDate}
-                      onChange={e => setForm({ ...form, expiryDate: e.target.value })}
+                      value={form.minOrderAmount}
+                      onChange={e => setForm({ ...form, minOrderAmount: parseFloat(e.target.value) })}
+                      min="0"
                       required
+                    />
+                  </div>
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-muted">Valid From</label>
+                      <input
+                        type="date"
+                        className="form-control rounded-3"
+                        value={form.validFrom}
+                        onChange={e => setForm({ ...form, validFrom: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-muted">Expiry Date</label>
+                      <input
+                        type="date"
+                        className="form-control rounded-3"
+                        value={form.expiryDate}
+                        onChange={e => setForm({ ...form, expiryDate: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold text-muted">Terms & Conditions (Optional)</label>
+                    <textarea
+                      className="form-control rounded-3"
+                      rows="2"
+                      value={form.termsAndConditions}
+                      onChange={e => setForm({ ...form, termsAndConditions: e.target.value })}
+                      placeholder="e.g. Only valid for bookings made on weekends."
                     />
                   </div>
                 </div>

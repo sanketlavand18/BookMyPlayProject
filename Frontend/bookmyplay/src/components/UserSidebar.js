@@ -13,6 +13,7 @@ import {
     FaTimes
 } from "react-icons/fa";
 import logo from "../assets/images/logo.png";
+import "../css/Login.css";
 
 function UserSidebar({ mobileOpen, onCloseSidebar }) {
     const navigate = useNavigate();
@@ -68,17 +69,18 @@ function UserSidebar({ mobileOpen, onCloseSidebar }) {
             )}
 
             <div className={sidebarClass} style={sidebarStyle}>
-                <div className="sidebar-brand border-bottom border-secondary w-100 position-relative">
-                    <img
-                        src={logo}
-                        alt="BookMyPlay"
-                        className="sidebar-logo"
-                    />
-                    <h3 className="sidebar-title">
-                        BookMyPlay
-                    </h3>
+                <div className="d-flex justify-content-between align-items-center mb-3 py-2 border-bottom border-secondary position-relative w-100">
+                    <div className="w-100 d-flex flex-column align-items-center justify-content-center text-center">
+                        <div className="d-flex justify-content-center mb-2">
+                            <div className="logo-container logo-auth" style={{ width: "80px", height: "80px" }}>
+                                <img src={logo} alt="Book My Play" className="app-logo" />
+                            </div>
+                        </div>
+                        <h2 className="login-title mb-1" style={{ fontSize: "1.25rem" }}>BookMyPlay</h2>
+                        <span className="login-subtitle text-uppercase fw-semibold" style={{ letterSpacing: "1px", fontSize: "0.65rem", marginBottom: "0px" }}>User Panel</span>
+                    </div>
                     {mobileOpen && (
-                        <button className="btn btn-dark btn-sm d-md-none p-1 text-white border-0 position-absolute end-0 top-0 mt-3 me-3" onClick={onCloseSidebar}>
+                        <button className="btn btn-dark btn-sm d-md-none p-1 text-white border-0 position-absolute" style={{ right: "10px", top: "10px" }} onClick={onCloseSidebar}>
                             <FaTimes className="fs-5" />
                         </button>
                     )}

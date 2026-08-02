@@ -26,7 +26,18 @@ public class Coupon {
 
     private Integer usageLimit;
 
+    @Builder.Default
     private Integer usageCount = 0;
 
-    private String status = "ACTIVE"; // ACTIVE, INACTIVE
+    private String status;
+
+    private String title;
+
+    private String description;
+
+    private Double minOrderAmount;
+
+    private LocalDate validFrom;
+
+    private String termsAndConditions;
 }

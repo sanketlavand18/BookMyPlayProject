@@ -26,5 +26,7 @@ public class VenueImage {
     private String imagePath;
 
     @Column(nullable = false)
+    @Builder.Default
+
     private Boolean isCover = false;
 }

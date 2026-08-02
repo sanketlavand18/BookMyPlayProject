@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,7 @@ public class VendorServiceImpl implements VendorService {
     private final BookingRepository bookingRepository;
 
     @Override
+    @Transactional
     public VendorStatsResponse getVendorStats(Long vendorId) {
         // Count venues belonging to vendor
         long totalVenues = venueRepository.findByVendorId(vendorId).size();

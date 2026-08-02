@@ -40,6 +40,7 @@ import ManageVenues from "./pages/admin/ManageVenues";
 import ManageBookings from "./pages/admin/ManageBookings";
 import ManageReviews from "./pages/admin/ManageReviews";
 import ContactSettings from "./pages/admin/ContactSettings";
+import AboutSettings from "./pages/admin/AboutSettings";
 import ManageSubscriptions from "./pages/admin/ManageSubscriptions";
 import ManageSubscriptionPayments from "./pages/admin/ManageSubscriptionPayments";
 import VendorPricing from "./pages/vendor/VendorPricing";
@@ -54,10 +55,8 @@ import UserLayout from "./layouts/UserLayout";
 import ManageCategories from "./pages/admin/ManageCategories";
 import AdminProfile from "./pages/admin/AdminProfile";
 import ManageCoupons from "./pages/admin/ManageCoupons";
-import ManageTickets from "./pages/admin/ManageTickets";
-import AuditLogs from "./pages/admin/AuditLogs";
-import WebsiteSettings from "./pages/admin/WebsiteSettings";
 import BookingCalendar from "./pages/admin/BookingCalendar";
+
 
 
 // Global window.alert override with SweetAlert2
@@ -163,6 +162,7 @@ function App() {
           <Route path="/admin/payments" element={<ManagePayments />} />
 
           <Route path="/admin/contact-settings" element={<ContactSettings />} />
+          <Route path="/admin/about-settings" element={<AboutSettings />} />
 
           <Route path="/admin/subscriptions" element={<ManageSubscriptions />} />
 
@@ -174,13 +174,8 @@ function App() {
 
           <Route path="/admin/coupons" element={<ManageCoupons />} />
 
-          <Route path="/admin/tickets" element={<ManageTickets />} />
-
-          <Route path="/admin/audit-logs" element={<AuditLogs />} />
-
-          <Route path="/admin/settings" element={<WebsiteSettings />} />
-
           <Route path="/admin/calendar" element={<BookingCalendar />} />
+
 
         </Routes>
 

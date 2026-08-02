@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { searchVenues } from "../services/venueService";
 import { getAllCategories } from "../services/categoryService";
+import axios from "axios";
 import VenueCard from "../components/VenueCart";
+import AIChatWidget from "../components/AIChatWidget";
 import {
     FaSearch,
     FaFilter,
@@ -16,7 +18,9 @@ import {
 function Home() {
     // Categories & Cities list
     const [categories, setCategories] = useState([]);
-    const [cities, setCities] = useState(["Pune", "Mumbai", "Bangalore", "Delhi", "Hyderabad", "Chennai", "Kolkata"]);
+    const [cities, setCities] = useState([]);
+    const [citySearchQuery, setCitySearchQuery] = useState("All Cities");
+    const [showCityDropdown, setShowCityDropdown] = useState(false);
 
     // Filter states
     const [query, setQuery] = useState("");
@@ -36,7 +40,12 @@ function Home() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        setCitySearchQuery(selectedCity || "All Cities");
+    }, [selectedCity]);
+
+    useEffect(() => {
         loadCategories();
+        loadCities();
     }, []);
 
     useEffect(() => {
@@ -49,6 +58,25 @@ function Home() {
             setCategories(response.data);
         } catch (error) {
             console.error("Error loading categories:", error);
+        }
+    };
+
+    const loadCities = async () => {
+        try {
+            const response = await axios.get("http://localhost:8080/api/venues");
+            const allVenues = response.data || [];
+            const uniqueCitiesMap = {};
+            allVenues.forEach(v => {
+                if (v.city && v.city.trim()) {
+                    const cleanCity = v.city.trim();
+                    const properCased = cleanCity.charAt(0).toUpperCase() + cleanCity.slice(1).toLowerCase();
+                    uniqueCitiesMap[properCased.toLowerCase()] = properCased;
+                }
+            });
+            const sortedCities = Object.values(uniqueCitiesMap).sort();
+            setCities(sortedCities);
+        } catch (error) {
+            console.error("Error loading cities:", error);
         }
     };
 
@@ -170,18 +198,103 @@ function Home() {
                             </div>
 
                             {/* City Filter */}
-                            <div className="mb-4">
+                            <div className="mb-4 position-relative">
                                 <label className="form-label fw-bold text-secondary small text-uppercase">Select City</label>
-                                <select
-                                    className="form-select border-2 shadow-none"
-                                    value={selectedCity}
-                                    onChange={(e) => { setSelectedCity(e.target.value); setCurrentPage(0); }}
-                                >
-                                    <option value="">All Cities</option>
-                                    {cities.map((city) => (
-                                        <option key={city} value={city}>{city}</option>
-                                    ))}
-                                </select>
+                                <div className="input-group">
+                                    <input
+                                        type="text"
+                                        className="form-control border-2 shadow-none"
+                                        placeholder="Search city..."
+                                        value={citySearchQuery}
+                                        onChange={(e) => {
+                                            setCitySearchQuery(e.target.value);
+                                            setShowCityDropdown(true);
+                                        }}
+                                        onFocus={() => {
+                                            setShowCityDropdown(true);
+                                            if (selectedCity) {
+                                                setCitySearchQuery("");
+                                            }
+                                        }}
+                                        style={{ borderRight: selectedCity ? "none" : "" }}
+                                    />
+                                    {selectedCity && (
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-outline-secondary border-2 bg-white border-start-0" 
+                                            onClick={() => {
+                                                setSelectedCity("");
+                                                setCitySearchQuery("All Cities");
+                                                setCurrentPage(0);
+                                            }}
+                                            style={{ borderColor: "#dee2e6" }}
+                                        >
+                                            <FaTimes className="small" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {showCityDropdown && (
+                                    <>
+                                        <div 
+                                            className="position-fixed top-0 start-0 w-100 h-100" 
+                                            style={{ zIndex: 999, cursor: "default" }}
+                                            onClick={() => {
+                                                setShowCityDropdown(false);
+                                                setCitySearchQuery(selectedCity || "All Cities");
+                                            }}
+                                        />
+                                        
+                                        <ul 
+                                            className="dropdown-menu show w-100 shadow-lg border-2 mt-1 py-1 rounded-3" 
+                                            style={{ 
+                                                zIndex: 1000, 
+                                                maxHeight: "200px", 
+                                                overflowY: "auto",
+                                                position: "absolute",
+                                                top: "100%",
+                                                left: 0
+                                            }}
+                                        >
+                                            <li 
+                                                className="dropdown-item py-2 fw-semibold text-secondary cursor-pointer hover-bg-light"
+                                                onClick={() => {
+                                                    setSelectedCity("");
+                                                    setCitySearchQuery("All Cities");
+                                                    setShowCityDropdown(false);
+                                                    setCurrentPage(0);
+                                                }}
+                                            >
+                                                All Cities
+                                            </li>
+                                            
+                                            {cities
+                                                .filter(city => 
+                                                    city.toLowerCase().includes(citySearchQuery.toLowerCase())
+                                                )
+                                                .map(city => (
+                                                    <li 
+                                                        key={city}
+                                                        className={`dropdown-item py-2 cursor-pointer hover-bg-light ${
+                                                            selectedCity.toLowerCase() === city.toLowerCase() ? "active bg-primary text-white" : ""
+                                                        }`}
+                                                        onClick={() => {
+                                                            setSelectedCity(city);
+                                                            setCitySearchQuery(city);
+                                                            setShowCityDropdown(false);
+                                                            setCurrentPage(0);
+                                                        }}
+                                                    >
+                                                        {city}
+                                                    </li>
+                                                ))
+                                            }
+                                            {cities.filter(city => city.toLowerCase().includes(citySearchQuery.toLowerCase())).length === 0 && (
+                                                <li className="dropdown-item py-2 text-muted small text-center">No cities found</li>
+                                            )}
+                                        </ul>
+                                    </>
+                                )}
                             </div>
 
                             {/* Price range filter */}
@@ -360,6 +473,7 @@ function Home() {
 
                 </div>
             </div>
+            <AIChatWidget />
         </div>
     );
 }

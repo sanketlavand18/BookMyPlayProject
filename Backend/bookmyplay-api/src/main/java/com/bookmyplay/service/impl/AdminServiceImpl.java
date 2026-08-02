@@ -7,7 +7,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.bookmyplay.dto.AdminDashboardResponse;
-import com.bookmyplay.dto.BookingResponse;
 import com.bookmyplay.dto.LoginRequest;
 import com.bookmyplay.dto.LoginResponse;
 import com.bookmyplay.entity.*;
@@ -37,33 +36,37 @@ public class AdminServiceImpl implements AdminService {
     private final SlotRepository slotRepository;
     private final PasswordEncoder passwordEncoder;
 
-
     @Override
+    @Transactional
     public AdminDashboardResponse getDashboard() {
-        long totalUsers = userRepository.findAll().stream().filter(u -> "USER".equalsIgnoreCase(u.getRole())).count();
-        long totalVendors = userRepository.findAll().stream().filter(u -> "VENDOR".equalsIgnoreCase(u.getRole())).count();
-        
+        List<User> allUsers = userRepository.findAll();
+        long totalUsers = allUsers.stream().filter(u -> "USER".equalsIgnoreCase(u.getRole())).count();
+        long totalVendors = allUsers.stream().filter(u -> "VENDOR".equalsIgnoreCase(u.getRole())).count();
+
         List<VendorSubscription> subs = subscriptionRepository.findAll();
-        
-        long activeVendors = userRepository.findAll().stream()
+
+        long activeVendors = allUsers.stream()
                 .filter(u -> "VENDOR".equalsIgnoreCase(u.getRole()))
-                .filter(u -> {
-                    return subs.stream()
-                            .filter(s -> s.getVendorId().equals(u.getId()) && "APPROVED".equalsIgnoreCase(s.getPaymentStatus()))
-                            .anyMatch(s -> s.getExpiryDate() != null && !s.getExpiryDate().isBefore(java.time.LocalDate.now()));
-                }).count();
+                .filter(u -> subs.stream()
+                        .filter(s -> s.getVendorId().equals(u.getId())
+                                && "APPROVED".equalsIgnoreCase(s.getPaymentStatus()))
+                        .anyMatch(s -> s.getExpiryDate() != null
+                                && !s.getExpiryDate().isBefore(java.time.LocalDate.now()))).count();
 
         long expiredVendors = totalVendors - activeVendors;
 
         long totalVenues = venueRepository.count();
-        long totalBookings = bookingRepository.count();
-        
+
+        // Fetch all bookings with associations once to prevent LazyInitializationException and N+1 query issue
+        List<Booking> bookings = bookingRepository.findAllWithAssociations();
+        long totalBookings = bookings.size();
+
         java.time.LocalDate today = java.time.LocalDate.now();
-        long todaysBookings = bookingRepository.findAll().stream()
+        long todaysBookings = bookings.stream()
                 .filter(b -> b.getBookingDate() != null && b.getBookingDate().equals(today))
                 .count();
 
-        double generalRevenue = bookingRepository.findAll().stream()
+        double generalRevenue = bookings.stream()
                 .filter(b -> b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
                 .mapToDouble(b -> b.getTotalPrice() != null ? b.getTotalPrice() : 0.0)
                 .sum();
@@ -81,8 +84,9 @@ public class AdminServiceImpl implements AdminService {
                 .filter(v -> "PENDING".equalsIgnoreCase(v.getStatus()) || v.getStatus() == null)
                 .count();
 
-        long monthlyBookings = bookingRepository.findAll().stream()
-                .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == today.getMonth() && b.getBookingDate().getYear() == today.getYear())
+        long monthlyBookings = bookings.stream()
+                .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == today.getMonth()
+                        && b.getBookingDate().getYear() == today.getYear())
                 .count();
 
         double platformCommission = 0.10 * generalRevenue;
@@ -102,39 +106,47 @@ public class AdminServiceImpl implements AdminService {
 
         for (java.time.LocalDate m : last6Months) {
             String monthName = m.format(monthFormatter);
-            
-            double commission = bookingRepository.findAll().stream()
-                    .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == m.getMonth() && b.getBookingDate().getYear() == m.getYear())
-                    .filter(b -> b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+
+            double commission = bookings.stream()
+                    .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == m.getMonth()
+                            && b.getBookingDate().getYear() == m.getYear())
+                    .filter(b -> b.getBookingStatus() != null
+                            && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
                     .mapToDouble(b -> b.getTotalPrice() != null ? b.getTotalPrice() * 0.10 : 0.0)
                     .sum();
-            
+
             double subAmt = subs.stream()
                     .filter(s -> "APPROVED".equalsIgnoreCase(s.getPaymentStatus()))
-                    .filter(s -> s.getPaymentDate() != null && s.getPaymentDate().getMonth() == m.getMonth() && s.getPaymentDate().getYear() == m.getYear())
+                    .filter(s -> s.getPaymentDate() != null && s.getPaymentDate().getMonth() == m.getMonth()
+                            && s.getPaymentDate().getYear() == m.getYear())
                     .mapToDouble(s -> s.getAmount() != null ? s.getAmount() : 0.0)
                     .sum();
-            
+
             double totalPlatformRev = commission + subAmt;
             monthlyRevenueList.add(new AdminDashboardResponse.MonthlyRevenueDTO(monthName, totalPlatformRev));
 
-            long bookingCount = bookingRepository.findAll().stream()
-                    .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == m.getMonth() && b.getBookingDate().getYear() == m.getYear())
-                    .filter(b -> b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+            long bookingCount = bookings.stream()
+                    .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == m.getMonth()
+                            && b.getBookingDate().getYear() == m.getYear())
+                    .filter(b -> b.getBookingStatus() != null
+                            && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
                     .count();
             monthlyBookingList.add(new AdminDashboardResponse.MonthlyBookingDTO(monthName, bookingCount));
         }
 
         // 2. Most Booked Sports
-        Map<String, Long> sportBookingsMap = bookingRepository.findAll().stream()
-                .filter(b -> b.getVenue() != null && b.getVenue().getCategory() != null && b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
-                .collect(Collectors.groupingBy(b -> b.getVenue().getCategory().getCategoryName(), Collectors.counting()));
+        Map<String, Long> sportBookingsMap = bookings.stream()
+                .filter(b -> b.getVenue() != null && b.getVenue().getCategory() != null && b.getBookingStatus() != null
+                        && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+                .collect(Collectors.groupingBy(b -> b.getVenue().getCategory().getCategoryName(),
+                        Collectors.counting()));
 
         long totalBookingsFiltered = sportBookingsMap.values().stream().mapToLong(Long::longValue).sum();
         List<AdminDashboardResponse.TopSportDTO> topSports = sportBookingsMap.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .map(entry -> {
-                    double percentage = totalBookingsFiltered > 0 ? (entry.getValue() * 100.0) / totalBookingsFiltered : 0.0;
+                    double percentage = totalBookingsFiltered > 0 ? (entry.getValue() * 100.0) / totalBookingsFiltered
+                            : 0.0;
                     return AdminDashboardResponse.TopSportDTO.builder()
                             .name(entry.getKey())
                             .bookings(entry.getValue())
@@ -143,21 +155,23 @@ public class AdminServiceImpl implements AdminService {
                 })
                 .collect(Collectors.toList());
 
-        String[] sportColors = {"#4f46e5", "#10b981", "#f59e0b", "#06b6d4"};
+        String[] sportColors = { "#4f46e5", "#10b981", "#f59e0b", "#06b6d4" };
         for (int i = 0; i < topSports.size(); i++) {
             topSports.get(i).setColor(sportColors[i % sportColors.length]);
         }
 
         // 3. Top Performing Cities
-        Map<String, Long> cityBookingsMap = bookingRepository.findAll().stream()
-                .filter(b -> b.getVenue() != null && b.getVenue().getCity() != null && b.getBookingStatus() != null && "CONFIRMED".equalsIgnoreCase(b.getBookingStatus().name()))
+        Map<String, Long> cityBookingsMap = bookings.stream()
+                .filter(b -> b.getVenue() != null && b.getVenue().getCity() != null && b.getBookingStatus() != null
+                        && "CONFIRMED".equalsIgnoreCase(b.getBookingStatus().name()))
                 .collect(Collectors.groupingBy(b -> b.getVenue().getCity(), Collectors.counting()));
 
         long totalConfirmedBookings = cityBookingsMap.values().stream().mapToLong(Long::longValue).sum();
         List<AdminDashboardResponse.TopCityDTO> topCitiesList = cityBookingsMap.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .map(entry -> {
-                    double percentage = totalConfirmedBookings > 0 ? (entry.getValue() * 100.0) / totalConfirmedBookings : 0.0;
+                    double percentage = totalConfirmedBookings > 0 ? (entry.getValue() * 100.0) / totalConfirmedBookings
+                            : 0.0;
                     return AdminDashboardResponse.TopCityDTO.builder()
                             .name(entry.getKey())
                             .bookings(entry.getValue())
@@ -167,9 +181,15 @@ public class AdminServiceImpl implements AdminService {
                 .collect(Collectors.toList());
 
         // 4. Top Vendors by Revenue
-        Map<Long, List<Booking>> bookingsByVendor = bookingRepository.findAll().stream()
-                .filter(b -> b.getVenue() != null && b.getVenue().getVendorId() != null && b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+        Map<Long, List<Booking>> bookingsByVendor = bookings.stream()
+                .filter(b -> b.getVenue() != null && b.getVenue().getVendorId() != null && b.getBookingStatus() != null
+                        && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
                 .collect(Collectors.groupingBy(b -> b.getVenue().getVendorId()));
+
+        // Pre-populate vendor names from allUsers
+        Map<Long, String> vendorNameMap = allUsers.stream()
+                .filter(u -> "VENDOR".equalsIgnoreCase(u.getRole()))
+                .collect(Collectors.toMap(User::getId, User::getFullName, (existing, replacement) -> existing));
 
         List<AdminDashboardResponse.TopVendorDTO> topVendorsList = bookingsByVendor.entrySet().stream()
                 .map(entry -> {
@@ -178,9 +198,7 @@ public class AdminServiceImpl implements AdminService {
                     double revenue = vendorBookingsList.stream()
                             .mapToDouble(b -> b.getTotalPrice() != null ? b.getTotalPrice() : 0.0)
                             .sum();
-                    String vendorName = userRepository.findById(vendorId)
-                            .map(User::getFullName)
-                            .orElse("Unknown Vendor");
+                    String vendorName = vendorNameMap.getOrDefault(vendorId, "Unknown Vendor");
                     return AdminDashboardResponse.TopVendorDTO.builder()
                             .name(vendorName)
                             .bookings(vendorBookingsList.size())
@@ -190,7 +208,8 @@ public class AdminServiceImpl implements AdminService {
                 .sorted(Comparator.comparingDouble(AdminDashboardResponse.TopVendorDTO::getRevenue).reversed())
                 .collect(Collectors.toList());
 
-        double maxRevenue = topVendorsList.stream().mapToDouble(AdminDashboardResponse.TopVendorDTO::getRevenue).max().orElse(0.0);
+        double maxRevenue = topVendorsList.stream().mapToDouble(AdminDashboardResponse.TopVendorDTO::getRevenue).max()
+                .orElse(0.0);
         for (AdminDashboardResponse.TopVendorDTO vendor : topVendorsList) {
             double percentage = maxRevenue > 0 ? (vendor.getRevenue() * 100.0) / maxRevenue : 0.0;
             vendor.setPercentage(Math.round(percentage * 10.0) / 10.0);
@@ -359,19 +378,46 @@ public class AdminServiceImpl implements AdminService {
 
     // Booking Management
     @Override
+    @Transactional
     public List<com.bookmyplay.dto.BookingResponse> getAllBookings() {
-        List<Booking> bookings = bookingRepository.findAll();
-        return bookings.stream().map(this::mapToBookingResponse).toList();
+        List<Booking> bookings = bookingRepository.findAllWithAssociations();
+
+        List<User> vendors = userRepository.findByRole("VENDOR");
+        Map<Long, String> vendorMap = vendors.stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName, (existing, replacement) -> existing));
+
+        List<Payment> payments = paymentRepository.findAll();
+        Map<Long, List<Payment>> paymentsByBookingId = payments.stream()
+                .collect(Collectors.groupingBy(Payment::getBookingId));
+
+        return bookings.stream()
+                .map(b -> mapToBookingResponse(b, vendorMap, paymentsByBookingId))
+                .toList();
     }
 
     @Override
+    @Transactional
     public com.bookmyplay.dto.BookingResponse getBookingById(Long id) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdWithAssociations(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         return mapToBookingResponse(booking);
     }
 
     private com.bookmyplay.dto.BookingResponse mapToBookingResponse(Booking booking) {
+        Map<Long, String> vendorMap = new java.util.HashMap<>();
+        if (booking.getVenue() != null && booking.getVenue().getVendorId() != null) {
+            userRepository.findById(booking.getVenue().getVendorId())
+                    .ifPresent(v -> vendorMap.put(v.getId(), v.getFullName()));
+        }
+        List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
+        Map<Long, List<Payment>> paymentsMap = Map.of(booking.getId(), payments);
+        return mapToBookingResponse(booking, vendorMap, paymentsMap);
+    }
+
+    private com.bookmyplay.dto.BookingResponse mapToBookingResponse(
+            Booking booking, 
+            Map<Long, String> vendorMap, 
+            Map<Long, List<Payment>> paymentsByBookingId) {
         String customerName = "N/A";
         String customerEmail = "N/A";
         String customerPhone = "N/A";
@@ -386,17 +432,14 @@ public class AdminServiceImpl implements AdminService {
         if (booking.getVenue() != null) {
             vendorId = booking.getVenue().getVendorId();
             if (vendorId != null) {
-                User vendor = userRepository.findById(vendorId).orElse(null);
-                if (vendor != null) {
-                    vendorName = vendor.getFullName();
-                }
+                vendorName = vendorMap.getOrDefault(vendorId, "N/A");
             }
         }
 
         String paymentStatus = "PENDING";
         String transactionId = "N/A";
-        List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
-        if (!payments.isEmpty()) {
+        List<Payment> payments = paymentsByBookingId.get(booking.getId());
+        if (payments != null && !payments.isEmpty()) {
             Payment p = payments.get(0);
             paymentStatus = p.getPaymentStatus();
             transactionId = p.getTransactionId();
@@ -413,7 +456,9 @@ public class AdminServiceImpl implements AdminService {
                 .venueName(booking.getVenue() != null ? booking.getVenue().getVenueName() : null)
                 .city(booking.getVenue() != null ? booking.getVenue().getCity() : null)
                 .imageUrl(booking.getVenue() != null ? booking.getVenue().getImageUrl() : null)
-                .categoryName(booking.getVenue() != null && booking.getVenue().getCategory() != null ? booking.getVenue().getCategory().getCategoryName() : null)
+                .categoryName(booking.getVenue() != null && booking.getVenue().getCategory() != null
+                        ? booking.getVenue().getCategory().getCategoryName()
+                        : null)
                 .slotId(booking.getSlot() != null ? booking.getSlot().getId() : null)
                 .bookingDate(booking.getBookingDate())
                 .startTime(booking.getStartTime())
@@ -443,36 +488,91 @@ public class AdminServiceImpl implements AdminService {
 
     // Payment Management
     @Override
+    @Transactional
     public List<Payment> getAllPayments() {
         List<Payment> payments = paymentRepository.findAll();
+        List<Long> bookingIds = payments.stream().map(Payment::getBookingId).distinct().toList();
+
+        Map<Long, Booking> bookingsMap = new java.util.HashMap<>();
+        Map<Long, String> vendorNameMap = new java.util.HashMap<>();
+
+        if (!bookingIds.isEmpty()) {
+            bookingRepository.findAllByIdsWithAssociations(bookingIds)
+                .forEach(b -> bookingsMap.put(b.getId(), b));
+
+            List<Long> vendorIds = bookingsMap.values().stream()
+                .map(b -> b.getVenue() != null ? b.getVenue().getVendorId() : null)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+            if (!vendorIds.isEmpty()) {
+                userRepository.findAllById(vendorIds)
+                    .forEach(v -> vendorNameMap.put(v.getId(), v.getFullName()));
+            }
+        }
+
         for (Payment p : payments) {
-            bookingRepository.findById(p.getBookingId()).ifPresent(b -> {
+            Booking b = bookingsMap.get(p.getBookingId());
+            if (b != null) {
                 if (b.getUser() != null) {
                     p.setCustomerName(b.getUser().getFullName());
                 }
                 if (b.getVenue() != null) {
                     p.setVenueName(b.getVenue().getVenueName());
-                    userRepository.findById(b.getVenue().getVendorId())
-                            .ifPresent(v -> p.setVendorName(v.getFullName()));
+                    String vendorName = vendorNameMap.get(b.getVenue().getVendorId());
+                    if (vendorName != null) {
+                        p.setVendorName(vendorName);
+                    }
                 }
-            });
+            }
         }
         return payments;
     }
 
     @Override
+    @Transactional
     public Payment getPaymentById(Long id) {
-        return paymentRepository.findById(id)
+        Payment p = paymentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Payment not found"));
+        bookingRepository.findByIdWithAssociations(p.getBookingId()).ifPresent(b -> {
+            if (b.getUser() != null) {
+                p.setCustomerName(b.getUser().getFullName());
+            }
+            if (b.getVenue() != null) {
+                p.setVenueName(b.getVenue().getVenueName());
+                if (b.getVenue().getVendorId() != null) {
+                    userRepository.findById(b.getVenue().getVendorId())
+                            .ifPresent(v -> p.setVendorName(v.getFullName()));
+                }
+            }
+        });
+        return p;
     }
 
     // Review Management
     @Override
+    @Transactional
     public List<Review> getAllReviews() {
-        List<Review> reviews = reviewRepository.findAll();
+        List<Review> reviews = reviewRepository.findAllWithVenue();
+        List<Long> userIds = reviews.stream()
+                .map(Review::getUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<Long, String> userNameMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            userRepository.findAllById(userIds)
+                    .forEach(u -> userNameMap.put(u.getId(), u.getFullName()));
+        }
+
         for (Review r : reviews) {
             if (r.getUserId() != null) {
-                userRepository.findById(r.getUserId()).ifPresent(u -> r.setUserName(u.getFullName()));
+                String userName = userNameMap.get(r.getUserId());
+                if (userName != null) {
+                    r.setUserName(userName);
+                }
             }
             if (r.getVenue() != null) {
                 r.setVenueName(r.getVenue().getVenueName());
@@ -496,7 +596,8 @@ public class AdminServiceImpl implements AdminService {
 
     private void updateVenueRating(Long venueId) {
         Venue venue = venueRepository.findById(venueId).orElse(null);
-        if (venue == null) return;
+        if (venue == null)
+            return;
         List<Review> reviews = reviewRepository.findByVenueId(venueId);
         double sum = 0.0;
         int count = 0;

@@ -2,9 +2,13 @@ package com.bookmyplay.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.bookmyplay.entity.Category;
+import com.bookmyplay.entity.User;
+import com.bookmyplay.repository.UserRepository;
 import com.bookmyplay.service.CategoryService;
 
 import lombok.RequiredArgsConstructor;
@@ -12,10 +16,11 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-
+@CrossOrigin(origins = "*")
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final UserRepository userRepository;
 
     @GetMapping
     public List<Category> getAllCategories() {
@@ -28,8 +33,17 @@ public class CategoryController {
     }
 
     @PostMapping
-    public Category addCategory(@RequestBody Category category) {
-        return categoryService.addCategory(category);
+    public ResponseEntity<?> addCategory(@RequestParam Long vendorId, @RequestBody Category category) {
+        User user = userRepository.findById(vendorId).orElse(null);
+        if (user == null || !"VENDOR".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only logged-in vendors can create categories.");
+        }
+        try {
+            Category saved = categoryService.addCategory(category);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")

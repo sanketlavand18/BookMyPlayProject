@@ -26,8 +26,11 @@ function UserCoupons() {
     setLoading(true);
     try {
       const res = await axios.get("http://localhost:8080/api/admin/extended/coupons");
-      // Filter out only active coupons
-      const activeCoupons = (res.data || []).filter(c => c.active);
+      const currentDate = new Date().toISOString().split("T")[0];
+      // Filter out only active and unexpired coupons
+      const activeCoupons = (res.data || []).filter(c => 
+        c.status === "ACTIVE" && (!c.expiryDate || c.expiryDate >= currentDate)
+      );
       setCoupons(activeCoupons);
     } catch (err) {
       console.error("Error loading coupons:", err);
@@ -78,12 +81,15 @@ function UserCoupons() {
                       {/* Top Header Banner */}
                       <div className="p-4 text-white text-center d-flex flex-column align-items-center justify-content-center" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
                         <FaGift className="fs-2 mb-2" />
-                        <h4 className="fw-bold mb-0">{c.discountPercent}% OFF</h4>
+                        <h4 className="fw-bold mb-0">{c.discount}% OFF</h4>
                         <span className="small opacity-75">Flat Discount</span>
                       </div>
 
                       {/* Details */}
                       <div className="p-4 flex-grow-1">
+                        <h5 className="fw-bold text-dark mb-1">{c.title || "Special Promo"}</h5>
+                        <p className="small text-muted mb-3">{c.description || "Discount on all turf slots."}</p>
+
                         <div className="border border-dashed p-3 rounded text-center bg-light mb-3 position-relative">
                           <span className="fw-bold text-dark fs-5 tracking-wider">{c.couponCode}</span>
                           <button 
@@ -95,8 +101,17 @@ function UserCoupons() {
                           </button>
                         </div>
 
-                        <p className="small text-secondary mb-2"><strong>Terms:</strong> {c.description || "Applicable on all turf reservations."}</p>
-                        <p className="small text-danger mb-0"><strong>Expiry Date:</strong> {c.expiryDate || "Limited Time Offer"}</p>
+                        <div className="small text-secondary mb-1"><strong>Valid From:</strong> {c.validFrom || "Today"}</div>
+                        <div className="small text-danger mb-1"><strong>Expiry Date:</strong> {c.expiryDate || "No Expiry"}</div>
+                        <div className="small text-dark mb-1"><strong>Min Order Amount:</strong> {c.minOrderAmount ? `₹${c.minOrderAmount}` : "None"}</div>
+
+                        {c.termsAndConditions && (
+                          <div className="border-top pt-2 mt-2">
+                            <span className="small text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                              <strong>T&C:</strong> {c.termsAndConditions}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Quick copy indicator */}

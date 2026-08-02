@@ -69,8 +69,7 @@ function AdminNavbar() {
     <nav className="navbar navbar-expand navbar-light bg-white border-bottom shadow-sm mb-4 px-4 py-3">
       <div className="container-fluid d-flex justify-content-between align-items-center">
         
-        {/* Left Side title */}
-        <h4 className="fw-bold text-dark mb-0">System Control</h4>
+        <h4 className="fw-bold text-dark mb-0">Admin Portal</h4>
 
         {/* Right Side Tools */}
         <div className="d-flex align-items-center gap-3">

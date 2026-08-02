@@ -23,10 +23,7 @@ const popularSports = [
     { name: "Badminton", icon: "🏸" }
 ];
 
-const upcomingMatches = [
-    { title: "Weekend Friendly Match", time: "Tomorrow, 07:00 PM", arena: "Camp Nou Arena", fee: "Free Entry" },
-    { title: "Corporate Football Clash", time: "Aug 5, 08:30 PM", arena: "Bernabeu Pitch", fee: "$15/player" }
-];
+
 
 function UserDashboard() {
     const navigate = useNavigate();
@@ -264,10 +261,10 @@ function UserDashboard() {
                                     </div>
                                 </div>
 
-                                {/* Right Side: Upcoming Matches & Recommended Venues */}
+                                {/* Right Side: Recommended Venues */}
                                 <div className="col-lg-4">
                                     {/* Recommended Venues */}
-                                    <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                                    <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                                         <h5 className="fw-bold text-dark mb-3">Recommended Venues</h5>
                                         {venues.length === 0 ? (
                                             <p className="text-muted small">No recommendations available.</p>
@@ -294,21 +291,6 @@ function UserDashboard() {
                                                 ))}
                                             </div>
                                         )}
-                                    </div>
-
-                                    {/* Upcoming Matches widget (UI only) */}
-                                    <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                                        <h5 className="fw-bold text-dark mb-3">Upcoming Match Sessions</h5>
-                                        <div className="d-flex flex-column gap-3">
-                                            {upcomingMatches.map((match, idx) => (
-                                                <div className="p-3 bg-success-subtle text-success border border-success rounded-3" key={idx}>
-                                                    <h6 className="fw-bold mb-1 text-dark">{match.title}</h6>
-                                                    <div className="small mb-1">⏰ <strong>Time:</strong> {match.time}</div>
-                                                    <div className="small mb-2">🏟 <strong>Venue:</strong> {match.arena}</div>
-                                                    <span className="badge bg-success text-white px-3 py-1.5 fw-bold">{match.fee}</span>
-                                                </div>
-                                            ))}
-                                        </div>
                                     </div>
                                 </div>
 

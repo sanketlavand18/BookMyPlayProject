@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaBell, FaCircle, FaUserCircle, FaUser, FaLock, FaSignOutAlt, FaCog, FaBars } from "react-icons/fa";
 import { getUnreadNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/images/logo.png";
 
 function UserNavbar({ onToggleSidebar }) {
   const navigate = useNavigate();
@@ -62,7 +61,7 @@ function UserNavbar({ onToggleSidebar }) {
     <nav className="navbar navbar-expand navbar-light bg-white border-bottom shadow-sm mb-4 px-4 py-3 sticky-top">
       <div className="container-fluid d-flex justify-content-between align-items-center">
         
-        {/* Mobile Hamburger & Logo */}
+        {/* Mobile Hamburger */}
         <div className="d-flex align-items-center gap-3">
           <button 
             className="btn btn-light d-md-none p-2 border shadow-none"
@@ -71,9 +70,6 @@ function UserNavbar({ onToggleSidebar }) {
           >
             <FaBars className="fs-5 text-secondary" />
           </button>
-          <div className="logo-container logo-navbar">
-            <img src={logo} alt="Book My Play" className="app-logo" />
-          </div>
         </div>
 
         {/* Tools Dashboard */}

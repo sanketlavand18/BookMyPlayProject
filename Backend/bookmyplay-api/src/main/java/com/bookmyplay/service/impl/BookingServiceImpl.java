@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class BookingServiceImpl implements BookingService {
         private final CouponRepository couponRepository;
 
         @Override
+        @Transactional
         public BookingResponse createBooking(CreateBookingRequest request) {
 
                 User user = userRepository.findById(request.getUserId())
@@ -44,15 +47,22 @@ public class BookingServiceImpl implements BookingService {
                                 .orElseThrow(() -> new RuntimeException("Venue Not Found"));
 
                 // Dynamically look up or create the Slot entity
-                List<Slot> existingSlots = slotRepository.findByVenueId(request.getVenueId());
-                Slot slot = existingSlots.stream()
-                                .filter(s -> s.getSlotDate().equals(request.getBookingDate()) &&
-                                                s.getStartTime().equals(request.getStartTime()) &&
-                                                s.getEndTime().equals(request.getEndTime()))
-                                .findFirst().orElse(null);
+                Slot slot = null;
+                if (request.getSlotId() != null) {
+                        slot = slotRepository.findByIdForUpdate(request.getSlotId()).orElse(null);
+                }
+
+                if (slot == null) {
+                        List<Slot> existingSlots = slotRepository.findByVenueId(request.getVenueId());
+                        slot = existingSlots.stream()
+                                        .filter(s -> s.getSlotDate().equals(request.getBookingDate()) &&
+                                                        s.getStartTime().equals(request.getStartTime()) &&
+                                                        s.getEndTime().equals(request.getEndTime()))
+                                        .findFirst().orElse(null);
+                }
 
                 if (slot != null && slot.getIsBooked()) {
-                        throw new RuntimeException("Slot Already Booked");
+                        throw new com.bookmyplay.exception.SlotAlreadyBookedException("This slot has already been booked by another user.");
                 }
 
                 if (slot == null) {
@@ -61,10 +71,7 @@ public class BookingServiceImpl implements BookingService {
                         slot.setSlotDate(request.getBookingDate());
                         slot.setStartTime(request.getStartTime());
                         slot.setEndTime(request.getEndTime());
-                        slot.setIsBooked(true);
-                        slot = slotRepository.save(slot);
-                } else {
-                        slot.setIsBooked(true);
+                        slot.setIsBooked(false);
                         slot = slotRepository.save(slot);
                 }
 
@@ -127,42 +134,85 @@ public class BookingServiceImpl implements BookingService {
                                 .build();
                 paymentRepository.save(payment);
 
+                // Mark the slot as booked only after the booking is successfully saved
+                slot.setIsBooked(true);
+                slotRepository.save(slot);
+
                 return mapToBookingResponse(savedBooking);
         }
 
         @Override
+        @Transactional
         public List<BookingResponse> getBookingsByUser(Long userId) {
-
                 List<Booking> bookings = bookingRepository.findByUserId(userId);
                 LocalDate today = LocalDate.now();
 
-                return bookings.stream().map(booking -> {
+                boolean hasUpdates = false;
+                for (Booking booking : bookings) {
                         if (booking.getBookingStatus() == BookingStatus.CONFIRMED && booking.getBookingDate().isBefore(today)) {
                                 booking.setBookingStatus(BookingStatus.COMPLETED);
-                                bookingRepository.save(booking);
+                                hasUpdates = true;
                         }
-                        return mapToBookingResponse(booking);
-                }).toList();
+                }
+                if (hasUpdates) {
+                        bookingRepository.saveAll(bookings);
+                }
+
+                List<Long> vendorIds = bookings.stream()
+                                .map(b -> b.getVenue() != null ? b.getVenue().getVendorId() : null)
+                                .filter(java.util.Objects::nonNull)
+                                .distinct()
+                                .toList();
+                Map<Long, String> vendorMap = new java.util.HashMap<>();
+                if (!vendorIds.isEmpty()) {
+                        userRepository.findAllById(vendorIds)
+                                        .forEach(v -> vendorMap.put(v.getId(), v.getFullName()));
+                }
+
+                List<Long> bookingIds = bookings.stream().map(Booking::getId).toList();
+                Map<Long, List<Payment>> paymentsMap = new java.util.HashMap<>();
+                if (!bookingIds.isEmpty()) {
+                        paymentRepository.findByBookingIdIn(bookingIds)
+                                        .forEach(p -> paymentsMap.computeIfAbsent(p.getBookingId(), k -> new java.util.ArrayList<>()).add(p));
+                }
+
+                return bookings.stream().map(booking -> mapToBookingResponse(booking, vendorMap, paymentsMap)).toList();
         }
 
         @Override
+        @Transactional
         public List<BookingResponse> getBookingsByVendor(Long vendorId) {
                 List<Booking> bookings = bookingRepository.findByVenue_VendorId(vendorId);
                 LocalDate today = LocalDate.now();
 
-                return bookings.stream().map(booking -> {
+                boolean hasUpdates = false;
+                for (Booking booking : bookings) {
                         if (booking.getBookingStatus() == BookingStatus.CONFIRMED && booking.getBookingDate().isBefore(today)) {
                                 booking.setBookingStatus(BookingStatus.COMPLETED);
-                                bookingRepository.save(booking);
+                                hasUpdates = true;
                         }
-                        return mapToBookingResponse(booking);
-                }).toList();
+                }
+                if (hasUpdates) {
+                        bookingRepository.saveAll(bookings);
+                }
+
+                Map<Long, String> vendorMap = new java.util.HashMap<>();
+                userRepository.findById(vendorId).ifPresent(v -> vendorMap.put(v.getId(), v.getFullName()));
+
+                List<Long> bookingIds = bookings.stream().map(Booking::getId).toList();
+                Map<Long, List<Payment>> paymentsMap = new java.util.HashMap<>();
+                if (!bookingIds.isEmpty()) {
+                        paymentRepository.findByBookingIdIn(bookingIds)
+                                        .forEach(p -> paymentsMap.computeIfAbsent(p.getBookingId(), k -> new java.util.ArrayList<>()).add(p));
+                }
+
+                return bookings.stream().map(booking -> mapToBookingResponse(booking, vendorMap, paymentsMap)).toList();
         }
 
         @Override
+        @Transactional
         public String cancelBooking(Long bookingId) {
-
-                Booking booking = bookingRepository.findById(bookingId)
+                Booking booking = bookingRepository.findByIdWithAssociations(bookingId)
                                 .orElseThrow(() -> new RuntimeException("Booking Not Found"));
 
                 if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
@@ -178,7 +228,6 @@ public class BookingServiceImpl implements BookingService {
                 booking.setBookingStatus(BookingStatus.CANCELLED);
                 bookingRepository.save(booking);
 
-                // Try to find the associated payment and mark it as REFUNDED
                 List<Payment> payments = paymentRepository.findByBookingId(bookingId);
                 for (Payment p : payments) {
                         p.setPaymentStatus("REFUNDED");
@@ -189,17 +238,18 @@ public class BookingServiceImpl implements BookingService {
         }
 
         @Override
+        @Transactional
         public BookingResponse getBookingById(Long bookingId) {
-                Booking booking = bookingRepository.findById(bookingId)
+                Booking booking = bookingRepository.findByIdWithAssociations(bookingId)
                                 .orElseThrow(() -> new RuntimeException("Booking Not Found"));
 
                 return mapToBookingResponse(booking);
         }
 
         @Override
-        @org.springframework.transaction.annotation.Transactional
+        @Transactional
         public String rescheduleBooking(Long bookingId, Long newSlotId) {
-                Booking booking = bookingRepository.findById(bookingId)
+                Booking booking = bookingRepository.findByIdWithAssociations(bookingId)
                                 .orElseThrow(() -> new RuntimeException("Booking Not Found"));
 
                 if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
@@ -213,18 +263,15 @@ public class BookingServiceImpl implements BookingService {
                         return "New slot is already booked";
                 }
 
-                // Free old slot
                 if (booking.getSlot() != null) {
                         Slot oldSlot = booking.getSlot();
                         oldSlot.setIsBooked(false);
                         slotRepository.save(oldSlot);
                 }
 
-                // Book new slot
                 newSlot.setIsBooked(true);
                 slotRepository.save(newSlot);
 
-                // Update booking
                 booking.setSlot(newSlot);
                 booking.setBookingDate(newSlot.getSlotDate());
                 booking.setStartTime(newSlot.getStartTime());
@@ -235,6 +282,20 @@ public class BookingServiceImpl implements BookingService {
         }
 
         private BookingResponse mapToBookingResponse(Booking booking) {
+                Map<Long, String> vendorMap = new java.util.HashMap<>();
+                if (booking.getVenue() != null && booking.getVenue().getVendorId() != null) {
+                        userRepository.findById(booking.getVenue().getVendorId())
+                                        .ifPresent(v -> vendorMap.put(v.getId(), v.getFullName()));
+                }
+                List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
+                Map<Long, List<Payment>> paymentsMap = java.util.Collections.singletonMap(booking.getId(), payments);
+                return mapToBookingResponse(booking, vendorMap, paymentsMap);
+        }
+
+        private BookingResponse mapToBookingResponse(
+                        Booking booking, 
+                        Map<Long, String> vendorMap, 
+                        Map<Long, List<Payment>> paymentsByBookingId) {
                 String customerName = "N/A";
                 String customerEmail = "N/A";
                 String customerPhone = "N/A";
@@ -249,17 +310,14 @@ public class BookingServiceImpl implements BookingService {
                 if (booking.getVenue() != null) {
                         vendorId = booking.getVenue().getVendorId();
                         if (vendorId != null) {
-                                User vendor = userRepository.findById(vendorId).orElse(null);
-                                if (vendor != null) {
-                                        vendorName = vendor.getFullName();
-                                }
+                                vendorName = vendorMap.getOrDefault(vendorId, "N/A");
                         }
                 }
 
                 String paymentStatus = "PENDING";
                 String transactionId = "N/A";
-                List<Payment> payments = paymentRepository.findByBookingId(booking.getId());
-                if (!payments.isEmpty()) {
+                List<Payment> payments = paymentsByBookingId.get(booking.getId());
+                if (payments != null && !payments.isEmpty()) {
                         Payment p = payments.get(0);
                         paymentStatus = p.getPaymentStatus();
                         transactionId = p.getTransactionId();
@@ -276,7 +334,9 @@ public class BookingServiceImpl implements BookingService {
                                 .venueName(booking.getVenue() != null ? booking.getVenue().getVenueName() : null)
                                 .city(booking.getVenue() != null ? booking.getVenue().getCity() : null)
                                 .imageUrl(booking.getVenue() != null ? booking.getVenue().getImageUrl() : null)
-                                .categoryName(booking.getVenue() != null && booking.getVenue().getCategory() != null ? booking.getVenue().getCategory().getCategoryName() : null)
+                                .categoryName(booking.getVenue() != null && booking.getVenue().getCategory() != null 
+                                                ? booking.getVenue().getCategory().getCategoryName() 
+                                                : null)
                                 .slotId(booking.getSlot() != null ? booking.getSlot().getId() : null)
                                 .bookingDate(booking.getBookingDate())
                                 .startTime(booking.getStartTime())

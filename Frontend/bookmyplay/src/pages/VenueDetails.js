@@ -328,7 +328,7 @@ function VenueDetails() {
         if (selected.length <= 1) return true;
         const sorted = [...selected].sort((a, b) => a.startTime.localeCompare(b.startTime));
         for (let i = 0; i < sorted.length - 1; i++) {
-            if (sorted[i].endTime !== sorted[i+1].startTime) {
+            if (sorted[i].endTime !== sorted[i + 1].startTime) {
                 return false;
             }
         }
@@ -383,6 +383,27 @@ function VenueDetails() {
         setCouponCode("");
         setCouponSuccess("");
         setCouponError("");
+    };
+
+    const extractErrorMessage = (error) => {
+        if (error.response && error.response.data) {
+            const data = error.response.data;
+            if (typeof data === "string") {
+                return data;
+            }
+            if (typeof data === "object") {
+                if (data.message && typeof data.message === "string") {
+                    return data.message;
+                }
+                if (data.error && typeof data.error === "string") {
+                    return data.error;
+                }
+            }
+        }
+        if (error.message && typeof error.message === "string") {
+            return error.message;
+        }
+        return "This slot is no longer available. Please choose another slot.";
     };
 
     // Booking Submission Flow
@@ -445,15 +466,31 @@ function VenueDetails() {
             });
 
             setSelectedSlots([]);
-            loadSlots();
+            await loadSlots();
         } catch (error) {
             console.error("Booking error:", error);
-            window.Swal.fire({
-                icon: "error",
-                title: "Booking Failed",
-                text: error.response?.data || "An error occurred while booking.",
-                confirmButtonColor: "#dc3545"
-            });
+
+            const rawErrorMsg = extractErrorMessage(error);
+            const isConflict = rawErrorMsg.toLowerCase().includes("already booked") || rawErrorMsg.toLowerCase().includes("booked");
+
+            if (isConflict) {
+                await window.Swal.fire({
+                    icon: "error",
+                    title: "Slot Already Booked",
+                    text: "This slot has already been booked by another user. Please select another available slot.",
+                    confirmButtonColor: "#dc3545"
+                });
+            } else {
+                await window.Swal.fire({
+                    icon: "error",
+                    title: "Booking Failed",
+                    text: rawErrorMsg,
+                    confirmButtonColor: "#dc3545"
+                });
+            }
+
+            setSelectedSlots([]);
+            await loadSlots();
         } finally {
             setBookingInProgress(false);
         }
@@ -689,10 +726,10 @@ function VenueDetails() {
             {/* Main Content Layout */}
             <div className="container py-5">
                 <div className="row g-4">
-                    
+
                     {/* Left Column */}
                     <div className="col-lg-8">
-                        
+
                         {/* Summary Details Card */}
                         <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
                             <div className="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
@@ -700,7 +737,7 @@ function VenueDetails() {
                                     <h4 className="fw-bold mb-1">{venue.venueName}</h4>
                                     <span className="text-muted small">Managed by <strong className="text-dark">{venue.vendorName || parsedContact.person || "Vendor Owner"}</strong></span>
                                 </div>
-                                <button 
+                                <button
                                     onClick={handleToggleFavorite}
                                     className="btn btn-outline-danger p-2 rounded-circle shadow-none border"
                                     style={{ width: "42px", height: "42px" }}
@@ -801,7 +838,7 @@ function VenueDetails() {
                         <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
                             <h5 className="fw-bold mb-3 text-dark border-bottom pb-2">Location & Directions</h5>
                             <p className="text-secondary small mb-3"><FaMapMarkerAlt className="text-success me-1" /> {venue.address}, {venue.city}, {venue.state}, {venue.country} - {venue.postalCode}</p>
-                            
+
                             {venue.latitude && venue.longitude && (
                                 <div className="mb-3">
                                     {mapLoadError ? (
@@ -881,7 +918,7 @@ function VenueDetails() {
                                             <div className="ps-0 ps-md-5">
                                                 {r.title && <h6 className="fw-bold text-dark small mb-1">🏷️ {r.title}</h6>}
                                                 <p className="text-secondary small mb-2 italic" style={{ fontStyle: "italic", whiteSpace: "pre-line" }}>"{r.comment}"</p>
-                                                
+
                                                 {r.vendorReply && (
                                                     <div className="mt-2 p-3 bg-light border-start border-4 border-success rounded-3">
                                                         <strong className="text-dark small d-block">Response from Venue:</strong>
@@ -958,7 +995,7 @@ function VenueDetails() {
                     {/* Right Column: Sticky Booking Widget */}
                     <div className="col-lg-4">
                         <div className="position-sticky" style={{ top: "100px" }}>
-                            
+
                             {/* Action Summary Rates */}
                             <div className="card border-0 shadow-sm p-4 rounded-4 bg-white text-center border-top border-4 border-success mb-4">
                                 <span className="text-muted small fw-semibold text-uppercase">Booking Rate</span>
@@ -994,20 +1031,30 @@ function VenueDetails() {
                                             return (
                                                 <button
                                                     key={s.id}
-                                                    disabled={s.booked}
+                                                    disabled={s.isBooked}
                                                     onClick={() => handleSlotClick(s)}
-                                                    className={`btn btn-sm text-start py-2.5 px-3 rounded-3 border fw-semibold d-flex justify-content-between align-items-center shadow-none ${
-                                                        s.booked ? "btn-light text-muted border-transparent opacity-50 cursor-not-allowed" :
-                                                        isSelected ? "btn-success text-white border-success shadow-sm" : "btn-outline-success"
-                                                    }`}
+                                                    className={`btn btn-sm text-start py-2.5 px-3 rounded-3 border fw-semibold d-flex justify-content-between align-items-center shadow-none ${s.isBooked
+                                                        ? "btn-light text-muted border-transparent opacity-50 cursor-not-allowed"
+                                                        : isSelected
+                                                            ? "btn-success text-white border-success shadow-sm"
+                                                            : "btn-outline-success"
+                                                        }`}
                                                 >
                                                     <span style={{ fontSize: "0.85rem" }}>
                                                         {formatTimeSlot(s.startTime)} - {formatTimeSlot(s.endTime)}
                                                     </span>
-                                                    {s.booked ? (
-                                                        <span className="badge bg-danger rounded-pill px-2 py-1 small">Booked</span>
+
+                                                    {s.isBooked ? (
+                                                        <span className="badge bg-danger rounded-pill px-2 py-1 small">
+                                                            Booked
+                                                        </span>
                                                     ) : (
-                                                        <span className={`badge rounded-pill px-2 py-1 small ${isSelected ? "bg-white text-success" : "bg-success text-white"}`}>
+                                                        <span
+                                                            className={`badge rounded-pill px-2 py-1 small ${isSelected
+                                                                ? "bg-white text-success"
+                                                                : "bg-success text-white"
+                                                                }`}
+                                                        >
                                                             {isSelected ? "Selected" : "Select"}
                                                         </span>
                                                     )}
@@ -1025,7 +1072,7 @@ function VenueDetails() {
                                             <div><strong>Total Slots Selected:</strong> {selectedSlots.length} slot(s)</div>
                                             <div><strong>Total Play Duration:</strong> {totalHours} hour(s) ({totalDurationMinutes} mins)</div>
                                         </div>
-                                        
+
                                         <div className="table-responsive">
                                             <table className="table table-sm table-borderless mb-0 small text-secondary">
                                                 <tbody>
