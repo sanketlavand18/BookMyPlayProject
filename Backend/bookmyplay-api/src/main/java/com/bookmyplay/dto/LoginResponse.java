@@ -16,4 +16,7 @@ public class LoginResponse {
     private String email;
     private String phone;
     private String role;
+    private String profilePicture;
+    private String address;
+    private String city;
 }

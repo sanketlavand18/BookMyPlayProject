@@ -69,7 +69,14 @@ function Home() {
             };
 
             const response = await searchVenues(params);
-            setVenues(response.data.content || []);
+            let fetchedVenues = response.data.content || [];
+            fetchedVenues.sort((a, b) => {
+                const order = { FEATURED: 1, TRENDING: 2, POPULAR: 3, RECOMMENDED: 4, NEW: 5 };
+                const rankA = order[a.tag?.toUpperCase()] || 99;
+                const rankB = order[b.tag?.toUpperCase()] || 99;
+                return rankA - rankB;
+            });
+            setVenues(fetchedVenues);
             setTotalPages(response.data.totalPages || 0);
             setTotalResults(response.data.totalElements || 0);
         } catch (error) {

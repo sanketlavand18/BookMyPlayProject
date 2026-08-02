@@ -75,4 +75,24 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping(value = "/{id}/upload-image", consumes = { "multipart/form-data" })
+    public ResponseEntity<?> uploadProfileImage(@PathVariable Long id, @RequestParam("image") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            User updatedUser = userService.uploadProfileImage(id, file);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/upload-image", consumes = { "multipart/form-data" })
+    public ResponseEntity<?> uploadProfileImageQuery(@RequestParam("userId") Long userId, @RequestParam("image") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            User updatedUser = userService.uploadProfileImage(userId, file);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

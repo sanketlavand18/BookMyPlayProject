@@ -5,6 +5,8 @@ import com.bookmyplay.entity.BookingStatus;
 import com.bookmyplay.entity.Payment;
 import com.bookmyplay.repository.BookingRepository;
 import com.bookmyplay.repository.PaymentRepository;
+import com.bookmyplay.entity.Coupon;
+import com.bookmyplay.repository.CouponRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ public class PaymentController {
 
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final CouponRepository couponRepository;
 
     @PostMapping("/create-order")
     public ResponseEntity<?> createOrder(@RequestBody PaymentOrderRequest request) {
@@ -59,6 +62,18 @@ public class PaymentController {
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         booking.setBookingStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
+
+        // Increment coupon usage count if applied
+        if (booking.getCouponCode() != null && !booking.getCouponCode().trim().isEmpty()) {
+            Coupon coupon = couponRepository.findByCouponCode(booking.getCouponCode().trim()).orElse(null);
+            if (coupon != null) {
+                coupon.setUsageCount((coupon.getUsageCount() != null ? coupon.getUsageCount() : 0) + 1);
+                if (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit()) {
+                    coupon.setStatus("INACTIVE");
+                }
+                couponRepository.save(coupon);
+            }
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Payment Verification Successful");

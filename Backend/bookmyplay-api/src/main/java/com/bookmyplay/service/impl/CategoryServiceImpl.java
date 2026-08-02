@@ -28,17 +28,38 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category addCategory(Category category) {
+        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+            throw new RuntimeException("Category Name is required.");
+        }
+        categoryRepository.findByCategoryNameIgnoreCase(category.getCategoryName().trim())
+            .ifPresent(existing -> {
+                throw new RuntimeException("Category already exists.");
+            });
+        
+        category.setCategoryName(category.getCategoryName().trim());
         return categoryRepository.save(category);
     }
 
     @Override
     public Category updateCategory(Long id, Category category) {
-
+        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+            throw new RuntimeException("Category Name is required.");
+        }
+        
         Category existing = categoryRepository.findById(id).orElse(null);
 
         if (existing != null) {
-            existing.setCategoryName(category.getCategoryName());
+            // Check if name is changing and duplicate name already exists
+            if (!existing.getCategoryName().equalsIgnoreCase(category.getCategoryName().trim())) {
+                categoryRepository.findByCategoryNameIgnoreCase(category.getCategoryName().trim())
+                    .ifPresent(dup -> {
+                        throw new RuntimeException("Category name already exists.");
+                    });
+            }
+            
+            existing.setCategoryName(category.getCategoryName().trim());
             existing.setDescription(category.getDescription());
+            existing.setIcon(category.getIcon());
 
             return categoryRepository.save(existing);
         }

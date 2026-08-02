@@ -75,6 +75,10 @@ public class VenueSpecification {
                 );
                 predicates.add(criteriaBuilder.greaterThan(slotSubquery, 0L));
             }
+            predicates.add(criteriaBuilder.or(
+                    criteriaBuilder.equal(root.get("status"), "APPROVED"),
+                    criteriaBuilder.isNull(root.get("status"))
+            ));
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };

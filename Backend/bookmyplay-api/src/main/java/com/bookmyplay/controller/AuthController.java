@@ -1,5 +1,7 @@
 package com.bookmyplay.controller;
 
+import com.bookmyplay.dto.VerifyForgotPasswordRequest;
+import com.bookmyplay.dto.ResetPasswordRequest;
 import com.bookmyplay.dto.LoginRequest;
 import com.bookmyplay.dto.RegisterRequest;
 import com.bookmyplay.entity.User;
@@ -46,6 +48,14 @@ public class AuthController {
             return ResponseEntity.badRequest().body("User Not Found");
         }
 
+        if (Boolean.TRUE.equals(user.get().getIsBlocked())) {
+            return ResponseEntity.badRequest().body("Your account has been blocked by the Administrator.");
+        }
+
+        if (Boolean.TRUE.equals(user.get().getIsBlocked())) {
+            return ResponseEntity.badRequest().body("Your account has been blocked by the Administrator.");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.get().getPassword())) {
             return ResponseEntity.badRequest().body("Invalid Password");
         }
@@ -58,9 +68,32 @@ public class AuthController {
                 .email(loggedInUser.getEmail())
                 .phone(loggedInUser.getPhone())
                 .role(loggedInUser.getRole())
+                .profilePicture(loggedInUser.getProfilePicture())
+                .address(loggedInUser.getAddress())
+                .city(loggedInUser.getCity())
                 .build();
 
         return ResponseEntity.ok(response);
 
+    }
+
+    @PostMapping("/verify-forgot-password")
+    public ResponseEntity<?> verifyForgotPassword(@Valid @RequestBody VerifyForgotPasswordRequest request) {
+        try {
+            userService.verifyForgotPassword(request.getEmail(), request.getEnteredCaptcha(), request.getGeneratedCaptcha());
+            return ResponseEntity.ok("Verification successful");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            userService.resetPassword(request.getEmail(), request.getNewPassword());
+            return ResponseEntity.ok("Password changed successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

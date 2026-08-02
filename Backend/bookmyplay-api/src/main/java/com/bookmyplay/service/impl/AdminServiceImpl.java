@@ -7,11 +7,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.bookmyplay.dto.AdminDashboardResponse;
+import com.bookmyplay.dto.BookingResponse;
 import com.bookmyplay.dto.LoginRequest;
 import com.bookmyplay.dto.LoginResponse;
 import com.bookmyplay.entity.*;
 import com.bookmyplay.repository.*;
 import com.bookmyplay.service.AdminService;
+
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,18 +31,192 @@ public class AdminServiceImpl implements AdminService {
     private final VenueRepository venueRepository;
     private final BookingRepository bookingRepository;
     private final ReviewRepository reviewRepository;
-    private final SlotRepository slotRepository;
     private final CategoryRepository categoryRepository;
     private final PaymentRepository paymentRepository;
+    private final VendorSubscriptionRepository subscriptionRepository;
+    private final SlotRepository slotRepository;
     private final PasswordEncoder passwordEncoder;
+
 
     @Override
     public AdminDashboardResponse getDashboard() {
-        return new AdminDashboardResponse(
-                userRepository.count(),
-                venueRepository.count(),
-                bookingRepository.count(),
-                reviewRepository.count());
+        long totalUsers = userRepository.findAll().stream().filter(u -> "USER".equalsIgnoreCase(u.getRole())).count();
+        long totalVendors = userRepository.findAll().stream().filter(u -> "VENDOR".equalsIgnoreCase(u.getRole())).count();
+        
+        List<VendorSubscription> subs = subscriptionRepository.findAll();
+        
+        long activeVendors = userRepository.findAll().stream()
+                .filter(u -> "VENDOR".equalsIgnoreCase(u.getRole()))
+                .filter(u -> {
+                    return subs.stream()
+                            .filter(s -> s.getVendorId().equals(u.getId()) && "APPROVED".equalsIgnoreCase(s.getPaymentStatus()))
+                            .anyMatch(s -> s.getExpiryDate() != null && !s.getExpiryDate().isBefore(java.time.LocalDate.now()));
+                }).count();
+
+        long expiredVendors = totalVendors - activeVendors;
+
+        long totalVenues = venueRepository.count();
+        long totalBookings = bookingRepository.count();
+        
+        java.time.LocalDate today = java.time.LocalDate.now();
+        long todaysBookings = bookingRepository.findAll().stream()
+                .filter(b -> b.getBookingDate() != null && b.getBookingDate().equals(today))
+                .count();
+
+        double generalRevenue = bookingRepository.findAll().stream()
+                .filter(b -> b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+                .mapToDouble(b -> b.getTotalPrice() != null ? b.getTotalPrice() : 0.0)
+                .sum();
+
+        double subRevenue = subs.stream()
+                .filter(s -> "APPROVED".equalsIgnoreCase(s.getPaymentStatus()))
+                .mapToDouble(s -> s.getAmount() != null ? s.getAmount() : 0.0)
+                .sum();
+
+        long pendingPayments = subs.stream()
+                .filter(s -> "PENDING".equalsIgnoreCase(s.getPaymentStatus()))
+                .count();
+
+        long pendingVenueApprovals = venueRepository.findAll().stream()
+                .filter(v -> "PENDING".equalsIgnoreCase(v.getStatus()) || v.getStatus() == null)
+                .count();
+
+        long monthlyBookings = bookingRepository.findAll().stream()
+                .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == today.getMonth() && b.getBookingDate().getYear() == today.getYear())
+                .count();
+
+        double platformCommission = 0.10 * generalRevenue;
+        double platformRevenue = subRevenue + platformCommission;
+
+        long totalReviews = reviewRepository.count();
+
+        // 1. Calculate Monthly Platform Revenue and Booking Volume (Last 6 Months)
+        List<java.time.LocalDate> last6Months = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            last6Months.add(today.minusMonths(i));
+        }
+
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMM");
+        List<AdminDashboardResponse.MonthlyRevenueDTO> monthlyRevenueList = new ArrayList<>();
+        List<AdminDashboardResponse.MonthlyBookingDTO> monthlyBookingList = new ArrayList<>();
+
+        for (java.time.LocalDate m : last6Months) {
+            String monthName = m.format(monthFormatter);
+            
+            double commission = bookingRepository.findAll().stream()
+                    .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == m.getMonth() && b.getBookingDate().getYear() == m.getYear())
+                    .filter(b -> b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+                    .mapToDouble(b -> b.getTotalPrice() != null ? b.getTotalPrice() * 0.10 : 0.0)
+                    .sum();
+            
+            double subAmt = subs.stream()
+                    .filter(s -> "APPROVED".equalsIgnoreCase(s.getPaymentStatus()))
+                    .filter(s -> s.getPaymentDate() != null && s.getPaymentDate().getMonth() == m.getMonth() && s.getPaymentDate().getYear() == m.getYear())
+                    .mapToDouble(s -> s.getAmount() != null ? s.getAmount() : 0.0)
+                    .sum();
+            
+            double totalPlatformRev = commission + subAmt;
+            monthlyRevenueList.add(new AdminDashboardResponse.MonthlyRevenueDTO(monthName, totalPlatformRev));
+
+            long bookingCount = bookingRepository.findAll().stream()
+                    .filter(b -> b.getBookingDate() != null && b.getBookingDate().getMonth() == m.getMonth() && b.getBookingDate().getYear() == m.getYear())
+                    .filter(b -> b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+                    .count();
+            monthlyBookingList.add(new AdminDashboardResponse.MonthlyBookingDTO(monthName, bookingCount));
+        }
+
+        // 2. Most Booked Sports
+        Map<String, Long> sportBookingsMap = bookingRepository.findAll().stream()
+                .filter(b -> b.getVenue() != null && b.getVenue().getCategory() != null && b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+                .collect(Collectors.groupingBy(b -> b.getVenue().getCategory().getCategoryName(), Collectors.counting()));
+
+        long totalBookingsFiltered = sportBookingsMap.values().stream().mapToLong(Long::longValue).sum();
+        List<AdminDashboardResponse.TopSportDTO> topSports = sportBookingsMap.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(entry -> {
+                    double percentage = totalBookingsFiltered > 0 ? (entry.getValue() * 100.0) / totalBookingsFiltered : 0.0;
+                    return AdminDashboardResponse.TopSportDTO.builder()
+                            .name(entry.getKey())
+                            .bookings(entry.getValue())
+                            .percentage(Math.round(percentage * 10.0) / 10.0)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        String[] sportColors = {"#4f46e5", "#10b981", "#f59e0b", "#06b6d4"};
+        for (int i = 0; i < topSports.size(); i++) {
+            topSports.get(i).setColor(sportColors[i % sportColors.length]);
+        }
+
+        // 3. Top Performing Cities
+        Map<String, Long> cityBookingsMap = bookingRepository.findAll().stream()
+                .filter(b -> b.getVenue() != null && b.getVenue().getCity() != null && b.getBookingStatus() != null && "CONFIRMED".equalsIgnoreCase(b.getBookingStatus().name()))
+                .collect(Collectors.groupingBy(b -> b.getVenue().getCity(), Collectors.counting()));
+
+        long totalConfirmedBookings = cityBookingsMap.values().stream().mapToLong(Long::longValue).sum();
+        List<AdminDashboardResponse.TopCityDTO> topCitiesList = cityBookingsMap.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(entry -> {
+                    double percentage = totalConfirmedBookings > 0 ? (entry.getValue() * 100.0) / totalConfirmedBookings : 0.0;
+                    return AdminDashboardResponse.TopCityDTO.builder()
+                            .name(entry.getKey())
+                            .bookings(entry.getValue())
+                            .percentage(Math.round(percentage * 10.0) / 10.0)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 4. Top Vendors by Revenue
+        Map<Long, List<Booking>> bookingsByVendor = bookingRepository.findAll().stream()
+                .filter(b -> b.getVenue() != null && b.getVenue().getVendorId() != null && b.getBookingStatus() != null && !"CANCELLED".equalsIgnoreCase(b.getBookingStatus().name()))
+                .collect(Collectors.groupingBy(b -> b.getVenue().getVendorId()));
+
+        List<AdminDashboardResponse.TopVendorDTO> topVendorsList = bookingsByVendor.entrySet().stream()
+                .map(entry -> {
+                    Long vendorId = entry.getKey();
+                    List<Booking> vendorBookingsList = entry.getValue();
+                    double revenue = vendorBookingsList.stream()
+                            .mapToDouble(b -> b.getTotalPrice() != null ? b.getTotalPrice() : 0.0)
+                            .sum();
+                    String vendorName = userRepository.findById(vendorId)
+                            .map(User::getFullName)
+                            .orElse("Unknown Vendor");
+                    return AdminDashboardResponse.TopVendorDTO.builder()
+                            .name(vendorName)
+                            .bookings(vendorBookingsList.size())
+                            .revenue(revenue)
+                            .build();
+                })
+                .sorted(Comparator.comparingDouble(AdminDashboardResponse.TopVendorDTO::getRevenue).reversed())
+                .collect(Collectors.toList());
+
+        double maxRevenue = topVendorsList.stream().mapToDouble(AdminDashboardResponse.TopVendorDTO::getRevenue).max().orElse(0.0);
+        for (AdminDashboardResponse.TopVendorDTO vendor : topVendorsList) {
+            double percentage = maxRevenue > 0 ? (vendor.getRevenue() * 100.0) / maxRevenue : 0.0;
+            vendor.setPercentage(Math.round(percentage * 10.0) / 10.0);
+        }
+
+        return AdminDashboardResponse.builder()
+                .totalUsers(totalUsers)
+                .totalVendors(totalVendors)
+                .activeVendors(activeVendors)
+                .expiredVendors(expiredVendors)
+                .totalVenues(totalVenues)
+                .totalBookings(totalBookings)
+                .todaysBookings(todaysBookings)
+                .monthlyBookings(monthlyBookings)
+                .pendingVenueApprovals(pendingVenueApprovals)
+                .totalRevenue(generalRevenue + subRevenue)
+                .subscriptionRevenue(subRevenue)
+                .platformRevenue(platformRevenue)
+                .pendingPayments(pendingPayments)
+                .totalReviews(totalReviews)
+                .monthlyRevenue(monthlyRevenueList)
+                .monthlyBookingsOverTime(monthlyBookingList)
+                .topSports(topSports)
+                .topCities(topCitiesList)
+                .topVendorsList(topVendorsList)
+                .build();
     }
 
     // Authentication
@@ -61,6 +242,9 @@ public class AdminServiceImpl implements AdminService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .role(user.getRole())
+                .profilePicture(user.getProfilePicture())
+                .address(user.getAddress())
+                .city(user.getCity())
                 .build();
     }
 
@@ -229,9 +413,7 @@ public class AdminServiceImpl implements AdminService {
                 .venueName(booking.getVenue() != null ? booking.getVenue().getVenueName() : null)
                 .city(booking.getVenue() != null ? booking.getVenue().getCity() : null)
                 .imageUrl(booking.getVenue() != null ? booking.getVenue().getImageUrl() : null)
-                .categoryName(booking.getVenue() != null && booking.getVenue().getCategory() != null
-                        ? booking.getVenue().getCategory().getCategoryName()
-                        : null)
+                .categoryName(booking.getVenue() != null && booking.getVenue().getCategory() != null ? booking.getVenue().getCategory().getCategoryName() : null)
                 .slotId(booking.getSlot() != null ? booking.getSlot().getId() : null)
                 .bookingDate(booking.getBookingDate())
                 .startTime(booking.getStartTime())
@@ -300,7 +482,37 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void deleteReview(Long id) {
-        reviewRepository.deleteById(id);
+        Review review = reviewRepository.findById(id).orElse(null);
+        if (review != null) {
+            Long venueId = review.getVenue() != null ? review.getVenue().getId() : null;
+            reviewRepository.deleteById(id);
+            if (venueId != null) {
+                updateVenueRating(venueId);
+            }
+        }
+    }
+
+    private void updateVenueRating(Long venueId) {
+        Venue venue = venueRepository.findById(venueId).orElse(null);
+        if (venue == null) return;
+        List<Review> reviews = reviewRepository.findByVenueId(venueId);
+        double sum = 0.0;
+        int count = 0;
+        for (Review r : reviews) {
+            if (r.getIsHidden() == null || !r.getIsHidden()) {
+                sum += r.getRating();
+                count++;
+            }
+        }
+        if (count > 0) {
+            venue.setAverageRating(Math.round((sum / count) * 10.0) / 10.0);
+            venue.setTotalReviews(count);
+        } else {
+            venue.setAverageRating(0.0);
+            venue.setTotalReviews(0);
+        }
+        venueRepository.save(venue);
     }
 }

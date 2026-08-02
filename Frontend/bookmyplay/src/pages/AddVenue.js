@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { addVenue } from "../services/venueService";
 import { getAllCategories, createCategory } from "../services/categoryService";
-import Navbar from "../components/Navbar";
+import VendorSidebar from "../components/VendorSidebar";
+import VendorNavbar from "../components/VendorNavbar";
 import {
     FaTimes,
     FaUpload,
@@ -11,25 +12,41 @@ import {
     FaRegBuilding,
     FaList,
     FaMapMarkerAlt,
-    FaCity,
-    FaFileAlt,
-    FaCheckCircle,
     FaClock,
     FaParking,
     FaRestroom,
     FaTint,
     FaLightbulb,
     FaDoorClosed,
-    FaChair
+    FaChair,
+    FaCoffee,
+    FaWifi,
+    FaLock,
+    FaPlusCircle,
+    FaInfoCircle,
+    FaUser,
+    FaPhoneAlt,
+    FaEnvelope,
+    FaFileAlt
 } from "react-icons/fa";
 
 function AddVenue() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user")) || {};
-
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [categories, setCategories] = useState([]);
-    const [customSportActive, setCustomSportActive] = useState(false);
-    const [customSportName, setCustomSportName] = useState("");
+
+    // Search and dynamic category modal states
+    const [categorySearch, setCategorySearch] = useState("");
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [newCategoryDesc, setNewCategoryDesc] = useState("");
+    const [newCategoryIcon, setNewCategoryIcon] = useState("");
+    const [savingCategory, setSavingCategory] = useState(false);
+
+    // Subscription status
+    const [subStatus, setSubStatus] = useState("ACTIVE");
+    const [pageLoading, setPageLoading] = useState(true);
 
     // Venue data state
     const [venue, setVenue] = useState({
@@ -41,37 +58,88 @@ function AddVenue() {
         description: "",
         pricePerHour: "",
         state: "",
-        country: "",
+        country: "India",
         postalCode: "",
         openTime: "07:00 AM",
         closeTime: "07:00 PM",
+        slotDuration: "60",
         latitude: "",
-        longitude: ""
+        longitude: "",
+        status: "PENDING" // PENDING = Publish Now, DRAFT = Save as Draft
     });
 
-    // Amenities state
+    // 12 Amenities state
     const [amenities, setAmenities] = useState({
-        parking: false,
-        washroom: false,
+        parkingSpace: false,
+        cleanWashroom: false,
         drinkingWater: false,
         floodLights: false,
         changingRoom: false,
-        seating: false
+        seatingArea: false,
+        cafeteria: false,
+        wifi: false,
+        lockerFacility: false,
+        firstAid: false,
+        cctvSecurity: false,
+        equipmentRental: false
+    });
+
+    // Venue rules (Optional)
+    const [rules, setRules] = useState("");
+
+    // Contact Information
+    const [contact, setContact] = useState({
+        person: "",
+        phone: "",
+        altPhone: "",
+        email: ""
     });
 
     // Image upload states
     const [files, setFiles] = useState([]);
     const [coverIndex, setCoverIndex] = useState(0);
     const [dragActive, setDragActive] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Form feedback states
+    // Form submission feedback state
     const [loading, setLoading] = useState(false);
-    const [errorMsg, setErrorMsg] = useState("");
-    const [successMsg, setSuccessMsg] = useState("");
 
     useEffect(() => {
+        if (!user.id) {
+            navigate("/login");
+            return;
+        }
+        checkSubscription();
         loadCategories();
-    }, []);
+    }, [user.id]);
+
+    const checkSubscription = async () => {
+        try {
+            setPageLoading(true);
+            const res = await fetch(`http://localhost:8080/api/subscriptions/vendor/${user.id}`);
+            const data = await res.json();
+            const status = data.status || "NONE";
+            const planType = data.planType || "NONE";
+            const isAllowed = (status === "ACTIVE" || status === "FREE_TRIAL" || planType === "FREE_TRIAL");
+            
+            if (!isAllowed) {
+                await window.Swal.fire({
+                    icon: "warning",
+                    title: "Subscription Expired",
+                    text: "Your subscription has expired. Please renew your subscription to publish new venues.",
+                    confirmButtonColor: "#198754",
+                    confirmButtonText: "Go to Plans"
+                });
+                navigate("/vendor/subscription");
+            } else {
+                setSubStatus("ACTIVE");
+            }
+        } catch (e) {
+            console.error("Error checking subscription:", e);
+        } finally {
+            setPageLoading(false);
+        }
+    };
 
     const loadCategories = async () => {
         try {
@@ -79,6 +147,63 @@ function AddVenue() {
             setCategories(response.data || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
+        }
+    };
+
+    const handleSaveCategory = async (e) => {
+        e.preventDefault();
+        if (!newCategoryName.trim()) {
+            window.Swal.fire({
+                icon: "warning",
+                title: "Validation Error",
+                text: "Category name is required.",
+                confirmButtonColor: "#198754"
+            });
+            return;
+        }
+
+        setSavingCategory(true);
+        try {
+            const res = await createCategory({
+                categoryName: newCategoryName.trim(),
+                description: newCategoryDesc.trim() || null,
+                icon: newCategoryIcon.trim() || null
+            });
+
+            await window.Swal.fire({
+                icon: "success",
+                title: "Category Created!",
+                text: `Category "${res.data.categoryName}" has been successfully added.`,
+                confirmButtonColor: "#198754",
+                timer: 2000
+            });
+
+            setShowCategoryModal(false);
+            setNewCategoryName("");
+            setNewCategoryDesc("");
+            setNewCategoryIcon("");
+
+            // Reload all categories and automatically select new category
+            const catsRes = await getAllCategories();
+            const list = catsRes.data || [];
+            setCategories(list);
+            
+            // Set category ID
+            setVenue(prev => ({
+                ...prev,
+                categoryId: res.data.id
+            }));
+
+        } catch (err) {
+            console.error(err);
+            window.Swal.fire({
+                icon: "error",
+                title: "Creation Failed",
+                text: err.response?.data?.message || err.response?.data || "Failed to create category. A duplicate might exist.",
+                confirmButtonColor: "#dc3545"
+            });
+        } finally {
+            setSavingCategory(false);
         }
     };
 
@@ -96,15 +221,11 @@ function AddVenue() {
         });
     };
 
-    const handleCategoryChange = (e) => {
-        const val = e.target.value;
-        if (val === "CUSTOM") {
-            setCustomSportActive(true);
-            setVenue({ ...venue, categoryId: "" });
-        } else {
-            setCustomSportActive(false);
-            setVenue({ ...venue, categoryId: val });
-        }
+    const handleContactChange = (e) => {
+        setContact({
+            ...contact,
+            [e.target.name]: e.target.value
+        });
     };
 
     const handleFileChange = (e) => {
@@ -114,18 +235,57 @@ function AddVenue() {
 
     const addSelectedFiles = (selectedFiles) => {
         const validExtensions = ["image/png", "image/jpg", "image/jpeg", "image/webp"];
-        const filtered = selectedFiles.filter((file) => {
-            const isValid = validExtensions.includes(file.type);
-            if (!isValid) {
-                alert(`Invalid format: ${file.name}. Only PNG, JPG, JPEG, and WEBP allowed.`);
+        const filtered = [];
+
+        for (let file of selectedFiles) {
+            const isValidFormat = validExtensions.includes(file.type);
+            if (!isValidFormat) {
+                window.Swal.fire({
+                    icon: "warning",
+                    title: "Invalid Format",
+                    text: `${file.name} format is not supported. Use PNG, JPG, JPEG, or WEBP.`,
+                    confirmButtonColor: "#198754"
+                });
+                continue;
             }
-            return isValid;
-        });
+
+            const isUnderSizeLimit = file.size <= 5 * 1024 * 1024; // 5 MB
+            if (!isUnderSizeLimit) {
+                window.Swal.fire({
+                    icon: "warning",
+                    title: "File Too Large",
+                    text: `${file.name} exceeds the 5 MB limit.`,
+                    confirmButtonColor: "#198754"
+                });
+                continue;
+            }
+
+            filtered.push(file);
+        }
 
         if (files.length + filtered.length > 8) {
-            alert("Maximum 8 images can be uploaded.");
+            window.Swal.fire({
+                icon: "warning",
+                title: "Limit Exceeded",
+                text: "Maximum 8 images can be uploaded.",
+                confirmButtonColor: "#198754"
+            });
             return;
         }
+
+        // Simulate progress bar on file load
+        setUploadProgress(10);
+        let progress = 10;
+        const interval = setInterval(() => {
+            progress += 30;
+            if (progress >= 100) {
+                clearInterval(interval);
+                setUploadProgress(100);
+                setTimeout(() => setUploadProgress(0), 1000);
+            } else {
+                setUploadProgress(progress);
+            }
+        }, 150);
 
         setFiles((prev) => [...prev, ...filtered]);
     };
@@ -158,485 +318,745 @@ function AddVenue() {
         }
     };
 
+    const parseTimeStr = (timeStr) => {
+        if (!timeStr) return null;
+        const parts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!parts) return null;
+        let hours = parseInt(parts[1], 10);
+        const minutes = parseInt(parts[2], 10);
+        const ampm = parts[3].toUpperCase();
+        if (ampm === "PM" && hours < 12) hours += 12;
+        if (ampm === "AM" && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+    };
+
     const validateForm = () => {
         if (!venue.venueName.trim()) return "Venue name is required.";
-        if (!customSportActive && !venue.categoryId) return "Please select a sport category.";
-        if (customSportActive && !customSportName.trim()) return "Please enter custom sport name.";
+        if (!venue.categoryId) return "Please select a category.";
+        if (!venue.description || venue.description.trim().length < 30) return "Description must be at least 30 characters.";
         if (!venue.address.trim()) return "Address is required.";
         if (!venue.city.trim()) return "City is required.";
         if (!venue.state.trim()) return "State is required.";
         if (!venue.country.trim()) return "Country is required.";
         if (!venue.postalCode.trim()) return "Postal code is required.";
-        if (!venue.description || venue.description.length < 30) return "Description must be at least 30 characters.";
-        if (!venue.pricePerHour || parseFloat(venue.pricePerHour) <= 0) return "Price per hour must be greater than 0.";
-        if (files.length === 0) return "At least one venue image is required.";
+        
+        if (!venue.pricePerHour || parseFloat(venue.pricePerHour) <= 0) {
+            return "Price per hour must be greater than zero.";
+        }
+
+        const openMin = parseTimeStr(venue.openTime);
+        const closeMin = parseTimeStr(venue.closeTime);
+        if (openMin === null || closeMin === null) {
+            return "Valid opening and closing times are required.";
+        }
+        if (openMin >= closeMin) {
+            return "Opening time must be before closing time.";
+        }
+
+        if (!venue.slotDuration) {
+            return "Slot duration is required.";
+        }
+
+        if (contact.phone && !/^\d{10}$/.test(contact.phone.trim())) {
+            return "Contact phone number must be exactly 10 digits.";
+        }
+        if (contact.altPhone && !/^\d{10}$/.test(contact.altPhone.trim())) {
+            return "Alternate phone number must be exactly 10 digits.";
+        }
+
+        if (files.length === 0) {
+            return "Please upload at least 1 image for the venue gallery.";
+        }
+
         return null;
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmitWithStatus = async (statusVal) => {
         setErrorMsg("");
-        setSuccessMsg("");
-
+        
         const err = validateForm();
         if (err) {
-            setErrorMsg(err);
-            window.scrollTo(0, 0);
+            window.Swal.fire({
+                icon: "warning",
+                title: "Validation Check",
+                text: err,
+                confirmButtonColor: "#198754"
+            });
             return;
         }
 
         setLoading(true);
 
         try {
-            let finalCategoryId = venue.categoryId;
-
-            if (customSportActive) {
-                const newCatResponse = await createCategory({
-                    categoryName: customSportName,
-                    description: customSportName
-                });
-                finalCategoryId = newCatResponse.data.id;
-            }
-
-            // Append amenities to description to store them compatibly
+            // Append 12 amenities to description
             const selectedAmenities = [];
-            if (amenities.parking) selectedAmenities.push("Parking");
-            if (amenities.washroom) selectedAmenities.push("Washroom");
+            if (amenities.parkingSpace) selectedAmenities.push("Parking Space");
+            if (amenities.cleanWashroom) selectedAmenities.push("Clean Washroom");
             if (amenities.drinkingWater) selectedAmenities.push("Drinking Water");
             if (amenities.floodLights) selectedAmenities.push("Flood Lights");
             if (amenities.changingRoom) selectedAmenities.push("Changing Room");
-            if (amenities.seating) selectedAmenities.push("Seating");
+            if (amenities.seatingArea) selectedAmenities.push("Seating Area");
+            if (amenities.cafeteria) selectedAmenities.push("Cafeteria");
+            if (amenities.wifi) selectedAmenities.push("Wi-Fi");
+            if (amenities.lockerFacility) selectedAmenities.push("Locker Facility");
+            if (amenities.firstAid) selectedAmenities.push("First Aid");
+            if (amenities.cctvSecurity) selectedAmenities.push("CCTV Security");
+            if (amenities.equipmentRental) selectedAmenities.push("Equipment Rental");
 
-            let finalDesc = venue.description;
+            let finalDesc = venue.description.trim();
             if (selectedAmenities.length > 0) {
                 finalDesc += "\n\nAmenities: " + selectedAmenities.join(", ");
             }
 
+            // Append rules
+            if (rules.trim()) {
+                finalDesc += "\n\nRules: " + rules.trim();
+            }
+
+            // Append contact details
+            if (contact.person || contact.phone || contact.altPhone || contact.email) {
+                finalDesc += `\n\nContact Information:\nPerson: ${contact.person.trim()}\nPhone: ${contact.phone.trim()}\nAltPhone: ${contact.altPhone.trim()}\nEmail: ${contact.email.trim()}`;
+            }
+
             const submissionData = {
                 ...venue,
+                status: statusVal,
                 description: finalDesc,
-                categoryId: finalCategoryId,
+                slotDuration: parseInt(venue.slotDuration, 10),
                 latitude: venue.latitude ? parseFloat(venue.latitude) : null,
                 longitude: venue.longitude ? parseFloat(venue.longitude) : null
             };
 
             await addVenue(submissionData, files, coverIndex);
-            setSuccessMsg("Venue registered successfully! Redirecting...");
+            
+            await window.Swal.fire({
+                icon: "success",
+                title: statusVal === "DRAFT" ? "Draft Saved!" : "Published successfully!",
+                text: statusVal === "DRAFT" 
+                    ? "Your venue details have been saved as a draft." 
+                    : "Your venue has been successfully submitted and timing slots generated.",
+                confirmButtonColor: "#198754",
+                timer: 2500
+            });
 
-            setTimeout(() => {
-                navigate("/vendor");
-            }, 2000);
-
+            navigate("/vendor/venues");
         } catch (error) {
             console.error("Backend Error:", error);
-            setErrorMsg(error.response?.data || "Failed to register venue.");
+            window.Swal.fire({
+                icon: "error",
+                title: "Failed to Add Venue",
+                text: error.response?.data || "An error occurred while saving the venue.",
+                confirmButtonColor: "#dc3545"
+            });
         } finally {
             setLoading(false);
         }
     };
 
+    const [errorMsg, setErrorMsg] = useState("");
+
+    const generateTimeOptions = () => {
+        const options = [];
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 30) {
+                const hr = h % 12 || 12;
+                const ampm = h >= 12 ? "PM" : "AM";
+                const timeStr = `${String(hr).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
+                options.push(timeStr);
+            }
+        }
+        return options;
+    };
+
+    const timeOptions = generateTimeOptions();
+
+    if (pageLoading) {
+        return (
+            <div className="container mt-5 text-center py-5">
+                <FaSpinner className="spinner-border text-success fs-2" role="status" />
+                <h5 className="mt-3 text-muted">Checking subscription parameters...</h5>
+            </div>
+        );
+    }
+
     return (
-        <>
-            <Navbar />
-            <div className="container py-5">
-                <div className="row justify-content-center">
-                    <div className="col-lg-9">
-                        <div className="card border-0 shadow-lg overflow-hidden rounded-4 bg-white">
-                            
-                            {/* Header Banner */}
-                            <div className="bg-gradient p-4 text-white text-center" style={{ background: "linear-gradient(135deg, #1e3a8a, #3b82f6)" }}>
-                                <h1 className="fw-bold mb-1">Add New Sports Venue</h1>
-                                <p className="mb-0 opacity-75">Register your sports complex, manage timing, and slots on BookMyPlay</p>
+        <div className="container-fluid">
+            <div className="row">
+                <div className="col-md-2 p-0">
+                    <VendorSidebar mobileOpen={sidebarOpen} onCloseSidebar={() => setSidebarOpen(false)} />
+                </div>
+                <div className="col-md-10 p-0 bg-light" style={{ minHeight: "100vh" }}>
+                    <VendorNavbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+                    
+                    {/* Sticky Header with Action Buttons */}
+                    <div className="sticky-top bg-white border-bottom py-3 px-4 shadow-sm" style={{ zIndex: 1020, top: "0" }}>
+                        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div>
+                                <nav aria-label="breadcrumb">
+                                    <ol className="breadcrumb mb-1 small fw-semibold">
+                                        <li className="breadcrumb-item"><Link to="/vendor" className="text-success text-decoration-none">Vendor Console</Link></li>
+                                        <li className="breadcrumb-item"><Link to="/vendor/venues" className="text-success text-decoration-none">My Venues</Link></li>
+                                        <li className="breadcrumb-item text-muted active" aria-current="page">Add New Venue</li>
+                                    </ol>
+                                </nav>
+                                <h3 className="fw-bold mb-0 text-dark">Add New Venue</h3>
+                                <p className="text-muted small mb-0">Fill in the details below to publish your sports venue on BookMyPlay.</p>
                             </div>
+                            <div className="d-flex gap-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleSubmitWithStatus("DRAFT")} 
+                                    className="btn btn-outline-secondary rounded-pill px-4 fw-bold"
+                                    disabled={loading}
+                                >
+                                    Save as Draft
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleSubmitWithStatus("PENDING")} 
+                                    className="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
+                                    disabled={loading}
+                                    style={{ backgroundColor: "#198754" }}
+                                >
+                                    {loading ? <FaSpinner className="spinner-border spinner-border-sm" /> : null}
+                                    Save & Publish
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => navigate("/vendor/venues")} 
+                                    className="btn btn-outline-danger rounded-pill px-4 fw-bold"
+                                    disabled={loading}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                            <div className="card-body p-5">
-                                {errorMsg && (
-                                    <div className="alert alert-danger border-0 shadow-sm mb-4" role="alert">
-                                        <strong>⚠️ Error:</strong> {errorMsg}
-                                    </div>
-                                )}
-
-                                {successMsg && (
-                                    <div className="alert alert-success border-0 shadow-sm mb-4 text-center" role="alert">
-                                        <FaCheckCircle className="me-2 text-success" /> <strong>{successMsg}</strong>
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleSubmit} onDragEnter={handleDrag}>
-
-                                    {/* SECTION 1: BASIC INFORMATION */}
-                                    <div className="mb-5 border-bottom pb-4">
-                                        <div className="d-flex align-items-center mb-4">
-                                            <div className="bg-primary-subtle text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: "40px", height: "40px" }}>
-                                                <FaRegBuilding className="fs-5" />
-                                            </div>
-                                            <h4 className="fw-bold mb-0 text-dark">Section 1: Basic Information</h4>
-                                        </div>
-                                        <div className="row g-4">
-                                            <div className="col-md-6">
-                                                <label className="form-label fw-semibold text-muted"><FaRegBuilding className="me-2" /> Venue Name</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control form-control-lg rounded-3"
-                                                    name="venueName"
-                                                    placeholder="e.g. Balewadi Box Cricket"
-                                                    value={venue.venueName}
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div className="col-md-6">
-                                                <label className="form-label fw-semibold text-muted"><FaList className="me-2" /> Sport Category</label>
-                                                <select
-                                                    className="form-select form-select-lg rounded-3"
-                                                    value={customSportActive ? "CUSTOM" : venue.categoryId}
-                                                    onChange={handleCategoryChange}
-                                                    required
-                                                >
-                                                    <option value="">Select Category</option>
-                                                    {categories.map((category) => (
-                                                        <option key={category.id} value={category.id}>
-                                                            {category.categoryName}
-                                                        </option>
-                                                    ))}
-                                                    <option value="CUSTOM" className="fw-bold text-primary">+ Add New Sport...</option>
-                                                </select>
-
-                                                {customSportActive && (
-                                                    <div className="mt-3">
-                                                        <label className="form-label fw-semibold text-primary">Type Custom Sport Name</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control rounded-3 border-primary"
-                                                            placeholder="e.g. Box Cricket"
-                                                            value={customSportName}
-                                                            onChange={(e) => setCustomSportName(e.target.value)}
-                                                            required
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="col-12">
-                                                <label className="form-label fw-semibold text-muted"><FaFileAlt className="me-2" /> Description (Min 30 characters)</label>
-                                                <textarea
-                                                    className="form-control rounded-3"
-                                                    name="description"
-                                                    rows="4"
-                                                    value={venue.description}
-                                                    onChange={handleChange}
-                                                    placeholder="Provide detailed description of facilities, turf quality, etc."
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* SECTION 2: LOCATION */}
-                                    <div className="mb-5 border-bottom pb-4">
-                                        <div className="d-flex align-items-center mb-4">
-                                            <div className="bg-warning-subtle text-warning rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: "40px", height: "40px" }}>
-                                                <FaMapMarkerAlt className="fs-5" />
-                                            </div>
-                                            <h4 className="fw-bold mb-0 text-dark">Section 2: Location Details</h4>
-                                        </div>
-
-                                        <div className="row g-3">
-                                            <div className="col-md-8">
-                                                <label className="form-label fw-semibold text-muted">Full Address</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control rounded-3"
-                                                    name="address"
-                                                    placeholder="e.g. Sector 5, Hiranandani Sports Complex"
-                                                    value={venue.address}
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted">City</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control rounded-3"
-                                                    name="city"
-                                                    placeholder="e.g. Mumbai"
-                                                    value={venue.city}
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted">State</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control rounded-3"
-                                                    name="state"
-                                                    placeholder="e.g. Maharashtra"
-                                                    value={venue.state}
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted">Country</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control rounded-3"
-                                                    name="country"
-                                                    placeholder="e.g. India"
-                                                    value={venue.country}
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted">Postal Code</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control rounded-3"
-                                                    name="postalCode"
-                                                    placeholder="e.g. 400076"
-                                                    value={venue.postalCode}
-                                                    onChange={handleChange}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-6">
-                                                <label className="form-label fw-semibold text-muted">Latitude (Optional)</label>
-                                                <input
-                                                    type="number"
-                                                    step="any"
-                                                    className="form-control rounded-3"
-                                                    name="latitude"
-                                                    placeholder="e.g. 19.1234"
-                                                    value={venue.latitude}
-                                                    onChange={handleChange}
-                                                />
-                                            </div>
-                                            <div className="col-md-6">
-                                                <label className="form-label fw-semibold text-muted">Longitude (Optional)</label>
-                                                <input
-                                                    type="number"
-                                                    step="any"
-                                                    className="form-control rounded-3"
-                                                    name="longitude"
-                                                    placeholder="e.g. 72.8765"
-                                                    value={venue.longitude}
-                                                    onChange={handleChange}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* SECTION 3: PRICING & TIMING */}
-                                    <div className="mb-5 border-bottom pb-4">
-                                        <div className="d-flex align-items-center mb-4">
-                                            <div className="bg-success-subtle text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: "40px", height: "40px" }}>
-                                                <FaClock className="fs-5" />
-                                            </div>
-                                            <h4 className="fw-bold mb-0 text-dark">Section 3: Pricing & Operating Hours</h4>
-                                        </div>
-                                        <div className="row g-3">
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted d-flex align-items-center"><FaRupeeSign className="me-1 text-success" /> Price Per Hour (INR)</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-control rounded-3"
-                                                    name="pricePerHour"
-                                                    value={venue.pricePerHour}
-                                                    onChange={handleChange}
-                                                    min="1"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted">Opening Time</label>
-                                                <select
-                                                    className="form-select rounded-3"
-                                                    name="openTime"
-                                                    value={venue.openTime}
-                                                    onChange={handleChange}
-                                                >
-                                                    {Array.from({ length: 24 }).map((_, i) => {
-                                                        const hr = i % 12 || 12;
-                                                        const ampm = i >= 12 ? "PM" : "AM";
-                                                        const timeStr = `${String(hr).padStart(2, "0")}:00 ${ampm}`;
-                                                        return <option key={i} value={timeStr}>{timeStr}</option>;
-                                                    })}
-                                                </select>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <label className="form-label fw-semibold text-muted">Closing Time</label>
-                                                <select
-                                                    className="form-select rounded-3"
-                                                    name="closeTime"
-                                                    value={venue.closeTime}
-                                                    onChange={handleChange}
-                                                >
-                                                    {Array.from({ length: 24 }).map((_, i) => {
-                                                        const hr = i % 12 || 12;
-                                                        const ampm = i >= 12 ? "PM" : "AM";
-                                                        const timeStr = `${String(hr).padStart(2, "0")}:00 ${ampm}`;
-                                                        return <option key={i} value={timeStr}>{timeStr}</option>;
-                                                    })}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* SECTION 4: VENUE IMAGES */}
-                                    <div className="mb-5 border-bottom pb-4">
-                                        <div className="d-flex align-items-center mb-4">
-                                            <div className="bg-danger-subtle text-danger rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: "40px", height: "40px" }}>
-                                                <FaUpload className="fs-5" />
-                                            </div>
-                                            <h4 className="fw-bold mb-0 text-dark">Section 4: Venue Gallery</h4>
-                                        </div>
-
-                                        <div
-                                            className={`border border-2 border-dashed rounded-4 p-5 text-center position-relative ${dragActive ? "border-primary bg-primary-subtle" : "border-muted bg-light"}`}
-                                            onDragEnter={handleDrag}
-                                            onDragLeave={handleDrag}
-                                            onDragOver={handleDrag}
-                                            onDrop={handleDrop}
-                                            style={{ cursor: "pointer", transition: "all 0.2s" }}
-                                        >
-                                            <input
-                                                type="file"
-                                                className="position-absolute w-100 h-100 top-0 start-0 opacity-0"
-                                                multiple
-                                                onChange={handleFileChange}
-                                                accept="image/png, image/jpg, image/jpeg, image/webp"
-                                                style={{ cursor: "pointer" }}
-                                            />
-                                            <FaUpload className="fs-1 text-primary mb-3" />
-                                            <h5>Drag & Drop images here, or browse</h5>
-                                            <p className="small text-muted mb-0">Supports PNG, JPG, JPEG, WEBP. Max 8 images. Click to choose.</p>
-                                        </div>
-
-                                        {files.length > 0 && (
-                                            <div className="mt-4">
-                                                <h6 className="fw-bold text-dark mb-3">Uploaded Images Preview ({files.length}/8)</h6>
-                                                <div className="row g-3">
-                                                    {files.map((file, idx) => (
-                                                        <div key={idx} className="col-md-3 col-sm-6">
-                                                            <div className="card h-100 border shadow-sm rounded-3 overflow-hidden position-relative">
-                                                                <img
-                                                                    src={URL.createObjectURL(file)}
-                                                                    alt="Preview"
-                                                                    className="card-img-top"
-                                                                    style={{ height: "120px", objectFit: "cover" }}
-                                                                />
-                                                                <div className="position-absolute top-0 start-0 m-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setCoverIndex(idx)}
-                                                                        className={`btn btn-xs rounded-pill shadow px-2 py-1 ${coverIndex === idx ? "btn-success" : "btn-light opacity-75"}`}
-                                                                        style={{ fontSize: "0.65rem", fontWeight: "bold" }}
-                                                                    >
-                                                                        {coverIndex === idx ? "⭐ Cover" : "Make Cover"}
-                                                                    </button>
-                                                                </div>
-                                                                <div className="position-absolute top-0 end-0 m-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleRemoveFile(idx)}
-                                                                        className="btn btn-sm btn-danger rounded-circle p-1 d-flex align-items-center justify-content-center shadow"
-                                                                        style={{ width: "24px", height: "24px" }}
-                                                                    >
-                                                                        <FaTimes size={10} />
-                                                                    </button>
-                                                                </div>
-                                                                <div className="card-footer bg-white border-0 text-center py-2 px-1">
-                                                                    <span className="small text-truncate d-block text-muted" style={{ maxWidth: "100%" }}>{file.name}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                    <div className="p-4">
+                        <div className="row justify-content-center">
+                            <div className="col-lg-9">
+                                <form onDragEnter={handleDrag}>
+                                    
+                                    {/* SECTION 1: BASIC INFO */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaRegBuilding className="text-success" /> Section 1: Basic Information
+                                            </h5>
+                                            <div className="row g-3">
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Venue Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="venueName"
+                                                        placeholder="e.g. Balewadi Box Cricket"
+                                                        value={venue.venueName}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Sport Category *</label>
+                                                    <select
+                                                        className="form-select rounded-3"
+                                                        name="categoryId"
+                                                        value={venue.categoryId}
+                                                        onChange={handleChange}
+                                                        required
+                                                    >
+                                                        <option value="">Select Category</option>
+                                                        {categories.map((category) => (
+                                                            <option key={category.id} value={category.id}>
+                                                                {category.categoryName}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-12">
+                                                    <label className="form-label small text-secondary fw-semibold">Description * (Minimum 30 characters)</label>
+                                                    <textarea
+                                                        className="form-control rounded-3"
+                                                        name="description"
+                                                        rows="4"
+                                                        placeholder="Provide turf quality details, size, and layout guidelines..."
+                                                        value={venue.description}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
                                                 </div>
                                             </div>
-                                        )}
+                                        </div>
+                                    </div>
+
+                                    {/* SECTION 2: LOCATION DETAILS */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaMapMarkerAlt className="text-success" /> Section 2: Location Details
+                                            </h5>
+                                            <div className="row g-3">
+                                                <div className="col-md-8">
+                                                    <label className="form-label small text-secondary fw-semibold">Full Address *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="address"
+                                                        placeholder="Building, street name, layout"
+                                                        value={venue.address}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label small text-secondary fw-semibold">City *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="city"
+                                                        placeholder="e.g. Pune"
+                                                        value={venue.city}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label small text-secondary fw-semibold">State *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="state"
+                                                        placeholder="e.g. Maharashtra"
+                                                        value={venue.state}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label small text-secondary fw-semibold">Country *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="country"
+                                                        value={venue.country}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label small text-secondary fw-semibold">Postal Code *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="postalCode"
+                                                        placeholder="6-digit PIN code"
+                                                        value={venue.postalCode}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Latitude (Optional)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="any"
+                                                        className="form-control rounded-3"
+                                                        name="latitude"
+                                                        placeholder="e.g. 18.5594"
+                                                        value={venue.latitude}
+                                                        onChange={handleChange}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Longitude (Optional)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="any"
+                                                        className="form-control rounded-3"
+                                                        name="longitude"
+                                                        placeholder="e.g. 73.7797"
+                                                        value={venue.longitude}
+                                                        onChange={handleChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECTION 3: PRICING & HOURS */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaClock className="text-success" /> Section 3: Pricing & Operating Hours
+                                            </h5>
+                                            <div className="row g-3">
+                                                <div className="col-md-3">
+                                                    <label className="form-label small text-secondary fw-semibold d-flex align-items-center"><FaRupeeSign className="me-1 text-muted" /> Price Per Hour *</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control rounded-3"
+                                                        name="pricePerHour"
+                                                        placeholder="e.g. 1200"
+                                                        value={venue.pricePerHour}
+                                                        onChange={handleChange}
+                                                        min="1"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-md-3">
+                                                    <label className="form-label small text-secondary fw-semibold">Slot Duration *</label>
+                                                    <select
+                                                        className="form-select rounded-3"
+                                                        name="slotDuration"
+                                                        value={venue.slotDuration}
+                                                        onChange={handleChange}
+                                                        required
+                                                    >
+                                                        <option value="30">30 Minutes</option>
+                                                        <option value="60">60 Minutes</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-md-3">
+                                                    <label className="form-label small text-secondary fw-semibold">Opening Time *</label>
+                                                    <select
+                                                        className="form-select rounded-3"
+                                                        name="openTime"
+                                                        value={venue.openTime}
+                                                        onChange={handleChange}
+                                                        required
+                                                    >
+                                                        {timeOptions.map((timeStr, idx) => (
+                                                            <option key={idx} value={timeStr}>{timeStr}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-md-3">
+                                                    <label className="form-label small text-secondary fw-semibold">Closing Time *</label>
+                                                    <select
+                                                        className="form-select rounded-3"
+                                                        name="closeTime"
+                                                        value={venue.closeTime}
+                                                        onChange={handleChange}
+                                                        required
+                                                    >
+                                                        {timeOptions.map((timeStr, idx) => (
+                                                            <option key={idx} value={timeStr}>{timeStr}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-12 mt-2">
+                                                    <div className="alert alert-info py-2 px-3 mb-0 rounded-3 d-flex align-items-center gap-2" style={{ borderLeft: "4px solid #0dcaf0" }}>
+                                                        <FaInfoCircle className="text-info fs-5" />
+                                                        <span className="small text-muted fw-semibold">
+                                                            Booking slots will be generated automatically based on the selected slot duration.
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECTION 4: GALLERY */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaUpload className="text-success" /> Section 4: Venue Gallery
+                                            </h5>
+                                            
+                                            <div
+                                                className={`border border-2 border-dashed rounded-4 p-5 text-center position-relative ${dragActive ? "border-success bg-success-subtle" : "border-muted bg-light"}`}
+                                                onDragEnter={handleDrag}
+                                                onDragLeave={handleDrag}
+                                                onDragOver={handleDrag}
+                                                onDrop={handleDrop}
+                                                style={{ cursor: "pointer", transition: "all 0.2s" }}
+                                            >
+                                                <input
+                                                    type="file"
+                                                    className="position-absolute w-100 h-100 top-0 start-0 opacity-0"
+                                                    multiple
+                                                    onChange={handleFileChange}
+                                                    accept="image/png, image/jpg, image/jpeg, image/webp"
+                                                    style={{ cursor: "pointer" }}
+                                                />
+                                                <FaUpload className="fs-1 text-success mb-3" />
+                                                <h6 className="fw-bold mb-1">Drag & Drop images here, or browse</h6>
+                                                <p className="small text-muted mb-0">Supports PNG, JPG, JPEG, WEBP. Max 8 images. Size limit 5 MB.</p>
+                                            </div>
+
+                                            {uploadProgress > 0 && (
+                                                <div className="progress mt-3 rounded-pill" style={{ height: "10px" }}>
+                                                    <div 
+                                                        className="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                                                        role="progressbar" 
+                                                        style={{ width: `${uploadProgress}%` }}
+                                                        aria-valuenow={uploadProgress} 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {files.length > 0 && (
+                                                <div className="mt-4">
+                                                    <h6 className="fw-bold text-dark mb-3">Uploaded Images Preview ({files.length}/8)</h6>
+                                                    <div className="row g-3">
+                                                        {files.map((file, idx) => (
+                                                            <div key={idx} className="col-md-3 col-sm-6">
+                                                                <div className="card h-100 border shadow-sm rounded-3 overflow-hidden position-relative">
+                                                                    <img
+                                                                        src={URL.createObjectURL(file)}
+                                                                        alt="Preview"
+                                                                        className="card-img-top"
+                                                                        style={{ height: "120px", objectFit: "cover" }}
+                                                                    />
+                                                                    <div className="position-absolute top-0 start-0 m-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setCoverIndex(idx)}
+                                                                            className={`btn btn-xs rounded-pill shadow px-2 py-1 ${coverIndex === idx ? "btn-success" : "btn-light opacity-75"}`}
+                                                                            style={{ fontSize: "0.65rem", fontWeight: "bold" }}
+                                                                        >
+                                                                            {coverIndex === idx ? "⭐ Cover" : "Make Cover"}
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="position-absolute top-0 end-0 m-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleRemoveFile(idx)}
+                                                                            className="btn btn-sm btn-danger rounded-circle p-1 d-flex align-items-center justify-content-center shadow"
+                                                                            style={{ width: "24px", height: "24px" }}
+                                                                        >
+                                                                            <FaTimes size={10} />
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="card-footer bg-white border-0 text-center py-2 px-1">
+                                                                        <span className="small text-truncate d-block text-muted" style={{ maxWidth: "100%" }}>{file.name}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* SECTION 5: AMENITIES */}
-                                    <div className="mb-5">
-                                        <div className="d-flex align-items-center mb-4">
-                                            <div className="bg-info-subtle text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: "40px", height: "40px" }}>
-                                                <FaParking className="fs-5" />
-                                            </div>
-                                            <h4 className="fw-bold mb-0 text-dark">Section 5: Amenities (Optional)</h4>
-                                        </div>
-                                        <div className="row g-3 ms-2">
-                                            <div className="col-md-4">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="checkbox" name="parking" id="amenity-parking" checked={amenities.parking} onChange={handleAmenityChange} />
-                                                    <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer" htmlFor="amenity-parking">
-                                                        <FaParking className="text-secondary" /> Parking Space
-                                                    </label>
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaParking className="text-success" /> Section 5: Amenities
+                                            </h5>
+                                            <div className="row g-3">
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="parkingSpace" id="amenity-parking" checked={amenities.parkingSpace} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-parking">
+                                                            <FaParking className="text-secondary" /> Parking Space
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="checkbox" name="washroom" id="amenity-washroom" checked={amenities.washroom} onChange={handleAmenityChange} />
-                                                    <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer" htmlFor="amenity-washroom">
-                                                        <FaRestroom className="text-secondary" /> Clean Washroom
-                                                    </label>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="cleanWashroom" id="amenity-washroom" checked={amenities.cleanWashroom} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-washroom">
+                                                            <FaRestroom className="text-secondary" /> Clean Washroom
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="checkbox" name="drinkingWater" id="amenity-water" checked={amenities.drinkingWater} onChange={handleAmenityChange} />
-                                                    <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer" htmlFor="amenity-water">
-                                                        <FaTint className="text-secondary" /> Drinking Water
-                                                    </label>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="drinkingWater" id="amenity-water" checked={amenities.drinkingWater} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-water">
+                                                            <FaTint className="text-secondary" /> Drinking Water
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="checkbox" name="floodLights" id="amenity-lights" checked={amenities.floodLights} onChange={handleAmenityChange} />
-                                                    <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer" htmlFor="amenity-lights">
-                                                        <FaLightbulb className="text-secondary" /> Flood Lights
-                                                    </label>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="floodLights" id="amenity-lights" checked={amenities.floodLights} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-lights">
+                                                            <FaLightbulb className="text-secondary" /> Flood Lights
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="checkbox" name="changingRoom" id="amenity-changing" checked={amenities.changingRoom} onChange={handleAmenityChange} />
-                                                    <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer" htmlFor="amenity-changing">
-                                                        <FaDoorClosed className="text-secondary" /> Changing Room
-                                                    </label>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="changingRoom" id="amenity-changing" checked={amenities.changingRoom} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-changing">
+                                                            <FaDoorClosed className="text-secondary" /> Changing Room
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="col-md-4">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="checkbox" name="seating" id="amenity-seating" checked={amenities.seating} onChange={handleAmenityChange} />
-                                                    <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer" htmlFor="amenity-seating">
-                                                        <FaChair className="text-secondary" /> Seating Area
-                                                    </label>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="seatingArea" id="amenity-seating" checked={amenities.seatingArea} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-seating">
+                                                            <FaChair className="text-secondary" /> Seating Area
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="cafeteria" id="amenity-cafeteria" checked={amenities.cafeteria} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-cafeteria">
+                                                            <FaCoffee className="text-secondary" /> Cafeteria
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="wifi" id="amenity-wifi" checked={amenities.wifi} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-wifi">
+                                                            <FaWifi className="text-secondary" /> Wi-Fi
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="lockerFacility" id="amenity-locker" checked={amenities.lockerFacility} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-locker">
+                                                            <FaLock className="text-secondary" /> Locker Facility
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="firstAid" id="amenity-firstaid" checked={amenities.firstAid} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-firstaid">
+                                                            <FaPlusCircle className="text-secondary" /> First Aid
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="cctvSecurity" id="amenity-cctv" checked={amenities.cctvSecurity} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-cctv">
+                                                            <FaRegBuilding className="text-secondary" /> CCTV Security
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <div className="form-check">
+                                                        <input className="form-check-input" type="checkbox" name="equipmentRental" id="amenity-rental" checked={amenities.equipmentRental} onChange={handleAmenityChange} />
+                                                        <label className="form-check-label d-flex align-items-center gap-2 cursor-pointer small" htmlFor="amenity-rental">
+                                                            <FaRegBuilding className="text-secondary" /> Equipment Rental
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <button
-                                        type="submit"
-                                        className="btn btn-lg w-100 text-white border-0 shadow py-3 mt-4 fw-bold rounded-3"
-                                        style={{
-                                            background: "linear-gradient(135deg, #10b981, #059669)",
-                                            fontSize: "1.1rem"
-                                        }}
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <FaSpinner className="spinner-border spinner-border-sm me-2" role="status" /> Saving Venue...
-                                            </>
-                                        ) : (
-                                            "Register Turf Venue"
-                                        )}
-                                    </button>
+                                    {/* SECTION 6: VENUE RULES */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaFileAlt className="text-success" /> Section 6: Venue Rules (Optional)
+                                            </h5>
+                                            <textarea
+                                                className="form-control rounded-3"
+                                                rows="3"
+                                                placeholder="e.g. Sports shoes compulsory, No smoking, No alcohol, Maintain cleanliness..."
+                                                value={rules}
+                                                onChange={(e) => setRules(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* SECTION 7: CONTACT INFORMATION */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaUser className="text-success" /> Section 7: Contact Information
+                                            </h5>
+                                            <div className="row g-3">
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Contact Person</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="person"
+                                                        placeholder="Name of manager"
+                                                        value={contact.person}
+                                                        onChange={handleContactChange}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Contact Number</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="phone"
+                                                        placeholder="10-digit number"
+                                                        value={contact.phone}
+                                                        onChange={handleContactChange}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Alternate Number</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control rounded-3"
+                                                        name="altPhone"
+                                                        placeholder="10-digit number"
+                                                        value={contact.altPhone}
+                                                        onChange={handleContactChange}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small text-secondary fw-semibold">Email Address</label>
+                                                    <input
+                                                        type="email"
+                                                        className="form-control rounded-3"
+                                                        name="email"
+                                                        placeholder="manager@example.com"
+                                                        value={contact.email}
+                                                        onChange={handleContactChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECTION 8: STATUS */}
+                                    <div className="card border-0 shadow-sm rounded-4 mb-5 bg-white">
+                                        <div className="card-body p-4">
+                                            <h5 className="fw-bold text-dark border-bottom pb-3 mb-4 d-flex align-items-center gap-2">
+                                                <FaInfoCircle className="text-success" /> Section 8: Venue Status
+                                            </h5>
+                                            <div className="d-flex gap-4">
+                                                <div className="form-check">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
+                                                        name="venueStatus"
+                                                        id="status-publish"
+                                                        checked={venue.status === "PENDING"}
+                                                        onChange={() => setVenue({ ...venue, status: "PENDING" })}
+                                                    />
+                                                    <label className="form-check-label fw-semibold text-dark small" htmlFor="status-publish">
+                                                        Publish Now (Submit for Admin Approval)
+                                                    </label>
+                                                </div>
+                                                <div className="form-check">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
+                                                        name="venueStatus"
+                                                        id="status-draft"
+                                                        checked={venue.status === "DRAFT"}
+                                                        onChange={() => setVenue({ ...venue, status: "DRAFT" })}
+                                                    />
+                                                    <label className="form-check-label fw-semibold text-dark small" htmlFor="status-draft">
+                                                        Save as Draft (Private to Profile)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                 </form>
                             </div>
@@ -644,7 +1064,65 @@ function AddVenue() {
                     </div>
                 </div>
             </div>
-        </>
+
+            {/* Dynamic Category Creation Bootstrap Modal */}
+            {showCategoryModal && (
+                <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} tabIndex="-1">
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content rounded-4 border-0 shadow">
+                            <div className="modal-header border-bottom">
+                                <h5 className="modal-title fw-bold">Add New Category</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowCategoryModal(false)} aria-label="Close"></button>
+                            </div>
+                            <form onSubmit={handleSaveCategory}>
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label small text-secondary fw-semibold">Category Name *</label>
+                                        <input
+                                            type="text"
+                                            className="form-control rounded-3"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            placeholder="e.g. Cricket, Football"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small text-secondary fw-semibold">Description (Optional)</label>
+                                        <textarea
+                                            className="form-control rounded-3"
+                                            value={newCategoryDesc}
+                                            onChange={(e) => setNewCategoryDesc(e.target.value)}
+                                            placeholder="Category brief details..."
+                                            rows="3"
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small text-secondary fw-semibold">Icon (Optional)</label>
+                                        <input
+                                            type="text"
+                                            className="form-control rounded-3"
+                                            value={newCategoryIcon}
+                                            onChange={(e) => setNewCategoryIcon(e.target.value)}
+                                            placeholder="e.g. FaRunning, FaCricket"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="modal-footer border-top">
+                                    <button type="button" className="btn btn-outline-secondary rounded-pill px-3" onClick={() => setShowCategoryModal(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn btn-success rounded-pill px-4 fw-bold" style={{ backgroundColor: "#198754" }} disabled={savingCategory}>
+                                        {savingCategory ? <span className="spinner-border spinner-border-sm me-2" /> : null}
+                                        Create Category
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 

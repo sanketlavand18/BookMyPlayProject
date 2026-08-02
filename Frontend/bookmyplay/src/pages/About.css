@@ -1,0 +1,344 @@
+/* About.css - BookMyPlay Redesigned About Page */
+
+:root {
+  --primary-green: #198754;
+  --primary-green-hover: #157347;
+  --primary-green-light: rgba(25, 135, 84, 0.08);
+  --primary-green-glow: rgba(25, 135, 84, 0.25);
+  --dark-bg: #212529;
+  --dark-bg-card: #2c3034;
+  --light-gray: #f8f9fa;
+  --white: #ffffff;
+  --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.08);
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(25, 135, 84, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+  }
+}
+
+/* Hero Section */
+.about-hero {
+  background: linear-gradient(135deg, #157347 0%, #198754 50%, #0f5132 100%);
+  padding: 6rem 0;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 5px solid rgba(0, 0, 0, 0.1);
+}
+
+.about-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.about-hero-content {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+/* Who We Are */
+.who-we-are-section {
+  padding: 5rem 0;
+  background-color: var(--white);
+}
+
+.section-title {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 2rem;
+  font-weight: 700;
+  color: var(--dark-bg);
+}
+
+.section-title::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background-color: var(--primary-green);
+  border-radius: 2px;
+}
+
+/* Common Card Styling */
+.about-card {
+  background: var(--white);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  box-shadow: var(--card-shadow);
+  transition: var(--transition-smooth);
+  height: 100%;
+}
+
+.about-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: rgba(25, 135, 84, 0.15);
+}
+
+/* Stats Section */
+.stats-section {
+  padding: 5rem 0;
+  background-color: var(--light-gray);
+}
+
+.stat-card {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.stat-icon-wrapper {
+  width: 70px;
+  height: 70px;
+  background-color: var(--primary-green-light);
+  color: var(--primary-green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 1.75rem;
+  transition: var(--transition-smooth);
+}
+
+.stat-card:hover .stat-icon-wrapper {
+  background-color: var(--primary-green);
+  color: var(--white);
+  transform: rotate(360deg);
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--dark-bg);
+  margin-bottom: 0.5rem;
+  font-feature-settings: "tnum";
+}
+
+.stat-desc {
+  color: #6c757d;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+/* Feature Section (Why Choose Us) */
+.features-section {
+  padding: 5rem 0;
+  background-color: var(--white);
+}
+
+.feature-card {
+  padding: 2rem;
+  text-align: left;
+}
+
+.feature-icon {
+  font-size: 2.25rem;
+  color: var(--primary-green);
+  margin-bottom: 1.25rem;
+  display: inline-block;
+  transition: var(--transition-smooth);
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.15);
+  color: var(--primary-green-hover);
+}
+
+.feature-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--dark-bg);
+  margin-bottom: 0.75rem;
+}
+
+.feature-text {
+  font-size: 0.925rem;
+  color: #5c636a;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+/* Services Section (Sports Grid) */
+.services-section {
+  padding: 5rem 0;
+  background-color: var(--light-gray);
+}
+
+.sport-card {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border-radius: 1rem;
+}
+
+.sport-icon-wrapper {
+  font-size: 3rem;
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+  transition: var(--transition-smooth);
+}
+
+.sport-card:hover .sport-icon-wrapper {
+  transform: scale(1.2) translateY(-4px);
+}
+
+.sport-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--dark-bg);
+  margin-bottom: 0;
+}
+
+/* Mission, Vision, Community */
+.mv-section {
+  padding: 5rem 0;
+  background-color: var(--white);
+}
+
+.mv-card {
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.mv-icon-wrapper {
+  width: 65px;
+  height: 65px;
+  background-color: rgba(33, 37, 41, 0.04);
+  color: var(--dark-bg);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 1.75rem;
+  transition: var(--transition-smooth);
+}
+
+.mv-card:hover .mv-icon-wrapper {
+  background-color: var(--primary-green-light);
+  color: var(--primary-green);
+}
+
+.mv-card-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--dark-bg);
+  margin-bottom: 1rem;
+}
+
+.mv-card-text {
+  font-size: 0.95rem;
+  color: #5c636a;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* Call To Action (CTA) */
+.cta-section {
+  background-color: var(--dark-bg);
+  color: var(--white);
+  padding: 6rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 10% 90%, rgba(25, 135, 84, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.cta-title {
+  font-size: 2.75rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(120deg, #ffffff, #a3cfbb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cta-text {
+  font-size: 1.15rem;
+  color: #ced4da;
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+}
+
+.cta-btn {
+  background-color: var(--primary-green);
+  color: var(--white);
+  padding: 0.85rem 2.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  border: 2px solid var(--primary-green);
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.cta-btn:hover {
+  background-color: var(--primary-green-hover);
+  border-color: var(--primary-green-hover);
+  color: var(--white);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.5);
+  animation: pulseGlow 1.5s infinite;
+}
+
+/* Responsiveness overrides */
+@media (max-width: 768px) {
+  .about-hero {
+    padding: 4rem 0;
+  }
+  .about-hero h1 {
+    font-size: 2.5rem;
+  }
+  .who-we-are-section, 
+  .stats-section, 
+  .features-section, 
+  .services-section, 
+  .mv-section, 
+  .cta-section {
+    padding: 3.5rem 0;
+  }
+  .cta-title {
+    font-size: 2.25rem;
+  }
+}

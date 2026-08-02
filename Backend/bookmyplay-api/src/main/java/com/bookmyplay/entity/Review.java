@@ -18,8 +18,18 @@ public class Review {
 
     private Integer rating;
 
+    private String title;
+
+    private Long bookingId;
+
     @Column(length = 1000)
     private String comment;
+
+    private String vendorReply;
+
+    private LocalDateTime replyAt;
+
+    private Boolean isHidden = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id", nullable = false)
@@ -37,4 +47,10 @@ public class Review {
 
     @Transient
     private String venueName;
+
+    @Transient
+    private String userAvatar;
+
+    @Transient
+    private java.time.LocalDate bookingDate;
 }

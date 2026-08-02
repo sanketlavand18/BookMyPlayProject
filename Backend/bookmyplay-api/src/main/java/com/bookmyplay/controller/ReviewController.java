@@ -45,4 +45,29 @@ public class ReviewController {
         return "Review Deleted Successfully";
     }
 
+    @GetMapping
+    public List<Review> getAllReviews() {
+        return reviewService.getAllReviews();
+    }
+
+    @GetMapping("/vendor/{vendorId}")
+    public List<Review> getReviewsByVendor(@PathVariable Long vendorId) {
+        return reviewService.getReviewsByVendor(vendorId);
+    }
+
+    @PutMapping("/{reviewId}/reply")
+    public Review replyToReview(@PathVariable Long reviewId, @RequestBody String reply) {
+        return reviewService.replyToReview(reviewId, reply);
+    }
+
+    @PutMapping("/{reviewId}/hide")
+    public Review hideReview(@PathVariable Long reviewId) {
+        return reviewService.hideReview(reviewId, true);
+    }
+
+    @PutMapping("/{reviewId}/restore")
+    public Review restoreReview(@PathVariable Long reviewId) {
+        return reviewService.hideReview(reviewId, false);
+    }
+
 }

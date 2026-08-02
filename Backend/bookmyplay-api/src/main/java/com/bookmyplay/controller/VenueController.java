@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 
@@ -68,8 +69,7 @@ public class VenueController {
             sorting = org.springframework.data.domain.Sort.by("id").descending();
         }
 
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
-                sorting);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sorting);
         org.springframework.data.domain.Page<Venue> result = venueService.searchVenues(searchDTO, pageable);
         return ResponseEntity.ok(result);
     }

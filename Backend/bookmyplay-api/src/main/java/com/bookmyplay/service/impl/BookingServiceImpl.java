@@ -14,6 +14,8 @@ import com.bookmyplay.repository.VenueRepository;
 import com.bookmyplay.service.BookingService;
 import com.bookmyplay.entity.Payment;
 import com.bookmyplay.repository.PaymentRepository;
+import com.bookmyplay.entity.Coupon;
+import com.bookmyplay.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,7 @@ public class BookingServiceImpl implements BookingService {
         private final VenueRepository venueRepository;
         private final SlotRepository slotRepository;
         private final PaymentRepository paymentRepository;
+        private final CouponRepository couponRepository;
 
         @Override
         public BookingResponse createBooking(CreateBookingRequest request) {
@@ -65,6 +68,35 @@ public class BookingServiceImpl implements BookingService {
                         slot = slotRepository.save(slot);
                 }
 
+                long durationInMinutes = java.time.temporal.ChronoUnit.MINUTES.between(slot.getStartTime(), slot.getEndTime());
+                Double originalPrice = (venue.getPricePerHour() * durationInMinutes) / 60.0;
+                Double discountAmount = 0.0;
+                Double finalPrice = originalPrice;
+                String appliedCouponCode = null;
+
+                if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
+                        String code = request.getCouponCode().trim();
+                        Coupon coupon = couponRepository.findByCouponCode(code)
+                                        .orElseThrow(() -> new RuntimeException("Invalid Coupon Code"));
+
+                        if (!"ACTIVE".equalsIgnoreCase(coupon.getStatus())) {
+                                throw new RuntimeException("Coupon is inactive.");
+                        }
+
+                        if (coupon.getExpiryDate() != null && coupon.getExpiryDate().isBefore(LocalDate.now())) {
+                                throw new RuntimeException("Coupon is expired.");
+                        }
+
+                        if (coupon.getUsageLimit() != null && coupon.getUsageCount() != null 
+                                        && coupon.getUsageCount() >= coupon.getUsageLimit()) {
+                                throw new RuntimeException("Coupon usage limit exceeded.");
+                        }
+
+                        appliedCouponCode = coupon.getCouponCode();
+                        discountAmount = (originalPrice * coupon.getDiscount()) / 100.0;
+                        finalPrice = originalPrice - discountAmount;
+                }
+
                 Booking booking = Booking.builder()
                                 .user(user)
                                 .venue(venue)
@@ -72,7 +104,11 @@ public class BookingServiceImpl implements BookingService {
                                 .bookingDate(slot.getSlotDate())
                                 .startTime(slot.getStartTime())
                                 .endTime(slot.getEndTime())
-                                .totalPrice(venue.getPricePerHour())
+                                .totalPrice(finalPrice)
+                                .originalAmount(originalPrice)
+                                .discountAmount(discountAmount)
+                                .couponCode(appliedCouponCode)
+                                .finalAmountPaid(finalPrice)
                                 .bookingStatus(BookingStatus.CONFIRMED)
                                 .createdAt(LocalDateTime.now())
                                 .build();
@@ -97,7 +133,7 @@ public class BookingServiceImpl implements BookingService {
         @Override
         public List<BookingResponse> getBookingsByUser(Long userId) {
 
-                List<Booking> bookings = bookingRepository.findByUser_Id(userId);
+                List<Booking> bookings = bookingRepository.findByUserId(userId);
                 LocalDate today = LocalDate.now();
 
                 return bookings.stream().map(booking -> {
@@ -246,6 +282,10 @@ public class BookingServiceImpl implements BookingService {
                                 .startTime(booking.getStartTime())
                                 .endTime(booking.getEndTime())
                                 .totalPrice(booking.getTotalPrice())
+                                .originalAmount(booking.getOriginalAmount())
+                                .discountAmount(booking.getDiscountAmount())
+                                .couponCode(booking.getCouponCode())
+                                .finalAmountPaid(booking.getFinalAmountPaid())
                                 .bookingStatus(booking.getBookingStatus().name())
                                 .createdAt(booking.getCreatedAt())
                                 .vendorId(vendorId)

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FaFacebook, FaInstagram, FaLinkedin, FaGithub } from "react-icons/fa";
 import "../css/Footer.css";
+import logo from "../assets/images/logo.png";
 
 function Footer() {
     return (
@@ -12,9 +13,9 @@ function Footer() {
 
                     <div className="col-md-4 mb-4">
 
-                        <h3 className="text-success fw-bold">
-                            BookMyPlay
-                        </h3>
+                        <div className="logo-container logo-footer" style={{ marginBottom: "15px" }}>
+                            <img src={logo} alt="Book My Play" className="app-logo" />
+                        </div>
 
                         <p>
                             Book sports venues easily and enjoy your favorite

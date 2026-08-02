@@ -36,6 +36,11 @@ public class Booking {
 
     private Double totalPrice;
 
+    private Double originalAmount;
+    private Double discountAmount;
+    private String couponCode;
+    private Double finalAmountPaid;
+
     @Enumerated(EnumType.STRING)
     private BookingStatus bookingStatus;
 

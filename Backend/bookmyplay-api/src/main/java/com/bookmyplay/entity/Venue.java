@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "venues")
@@ -54,9 +55,24 @@ public class Venue {
 
     private String closeTime;
 
+    private Integer slotDuration;
+
     @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<VenueImage> images;
 
     @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Review> reviews;
+    @Builder.Default
+    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
+
+    @Builder.Default
+    private String tag = "NEW"; // FEATURED, TRENDING, RECOMMENDED, POPULAR, NEW
+
+    @Builder.Default
+    private Double averageRating = 0.0;
+
+    @Builder.Default
+    private Integer totalReviews = 0;
 }

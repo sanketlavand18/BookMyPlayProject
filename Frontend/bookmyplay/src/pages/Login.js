@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/authService";
 import { loginAdmin } from "../services/adminService";
+import { useAuth } from "../context/AuthContext";
+import logo from "../assets/images/logo.png";
 import "../css/Login.css";
 
 import { Link } from "react-router-dom";
@@ -13,9 +15,12 @@ import {
     FaEyeSlash
 } from "react-icons/fa";
 
+const Swal = window.Swal;
+
 function Login() {
 
     const navigate = useNavigate();
+    const { login: authLogin } = useAuth();
 
     const [login, setLogin] = useState({
         email: "",
@@ -46,15 +51,28 @@ function Login() {
                 user = response.data;
 
                 if (user.role !== selectedRole) {
-                    alert(`Access denied. Your account is not registered as a ${selectedRole.toLowerCase()}.`);
+                    await Swal.fire({
+                        icon: "error",
+                        title: "Access Denied",
+                        text: `Access denied. Your account is not registered as a ${selectedRole.toLowerCase()}.`,
+                        confirmButtonText: "OK"
+                    });
                     return;
                 }
             }
 
             // Save user details
-            localStorage.setItem("user", JSON.stringify(user));
+            authLogin(user);
 
-            alert("Login Successful");
+            // Role-based welcome message
+            const roleName = user.role === "USER" ? "User" : user.role === "VENDOR" ? "Vendor" : "Admin";
+            await Swal.fire({
+                icon: "success",
+                title: "Login Successful",
+                text: `Welcome, ${roleName}! Login Successful.`,
+                showConfirmButton: false,
+                timer: 2000
+            });
 
             // Redirect based on role
             if (user.role === "USER") {
@@ -69,7 +87,12 @@ function Login() {
         }
         catch (error) {
             console.error(error);
-            alert(error.response?.data || "Login Failed");
+            await Swal.fire({
+                icon: "error",
+                title: "Login Failed",
+                text: error.response?.data || "Login Failed",
+                confirmButtonText: "OK"
+            });
         }
     };
 return (
@@ -77,6 +100,12 @@ return (
 <div className="login-page">
 
     <div className="login-card">
+
+        <div className="d-flex justify-content-center mb-3">
+            <div className="logo-container logo-auth">
+                <img src={logo} alt="Book My Play" className="app-logo" />
+            </div>
+        </div>
 
         <h2 className="login-title">
             Welcome Back 👋
@@ -184,7 +213,7 @@ return (
 
                 </div>
 
-                <Link to="#">
+                <Link to="/forgot-password">
                     Forgot Password?
                 </Link>
 

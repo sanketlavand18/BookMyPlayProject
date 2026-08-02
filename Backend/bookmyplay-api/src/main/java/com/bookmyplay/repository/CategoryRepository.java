@@ -5,4 +5,6 @@ import com.bookmyplay.entity.Category;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
+    java.util.Optional<Category> findByCategoryNameIgnoreCase(String categoryName);
+
 }

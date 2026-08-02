@@ -31,11 +31,16 @@ public class User {
     @Column(nullable = false)
     private String role;
 
+    @Column(name = "profile_image")
     private String profilePicture;
+
 
     private String address;
 
     private String city;
 
     private String businessName;
+
+    @Builder.Default
+    private Boolean isBlocked = false;
 }

@@ -39,20 +39,10 @@ public class BookingController {
         return bookingService.getBookingsByVendor(vendorId);
     }
 
-    @GetMapping("/history/{userId}")
-    public List<BookingResponse> getBookingHistory(
-            @PathVariable Long userId) {
-        return bookingService.getBookingsByUser(userId);
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.getBookingById(id));
-    }
-
-    @PutMapping("/cancel/{id}")
-    public String cancelBookingById(@PathVariable Long id) {
-        return bookingService.cancelBooking(id);
     }
 
     @PutMapping("/{bookingId}/cancel")
@@ -67,10 +57,5 @@ public class BookingController {
             @PathVariable Long id,
             @RequestParam Long newSlotId) {
         return bookingService.rescheduleBooking(id, newSlotId);
-    }
-
-    @GetMapping("/invoice/{id}")
-    public ResponseEntity<BookingResponse> getInvoice(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.getBookingById(id));
     }
 }

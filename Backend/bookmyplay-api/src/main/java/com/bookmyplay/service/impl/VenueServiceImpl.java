@@ -8,11 +8,16 @@ import com.bookmyplay.dto.AddVenueRequest;
 import com.bookmyplay.entity.Category;
 import com.bookmyplay.entity.Venue;
 import com.bookmyplay.entity.VenueImage;
+import com.bookmyplay.entity.VendorSubscription;
 import com.bookmyplay.repository.CategoryRepository;
 import com.bookmyplay.repository.VenueRepository;
+import com.bookmyplay.repository.VendorSubscriptionRepository;
 import com.bookmyplay.service.VenueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
+import java.time.LocalDate;
+
+import com.bookmyplay.service.SlotService;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +25,16 @@ public class VenueServiceImpl implements VenueService {
 
     private final VenueRepository venueRepository;
     private final CategoryRepository categoryRepository;
+    private final VendorSubscriptionRepository subscriptionRepository;
+    private final SlotService slotService;
 
     @Override
     @org.springframework.transaction.annotation.Transactional
     public String addVenue(AddVenueRequest request, MultipartFile[] images, int coverIndex) {
+
+        if (!isSubscriptionActive(request.getVendorId())) {
+            throw new RuntimeException("Your free trial has expired. Purchase a subscription plan to continue publishing your venues.");
+        }
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category Not Found"));
@@ -43,10 +54,16 @@ public class VenueServiceImpl implements VenueService {
                 .postalCode(request.getPostalCode())
                 .openTime(request.getOpenTime())
                 .closeTime(request.getCloseTime())
+                .slotDuration(request.getSlotDuration())
+                .status(request.getStatus() != null ? request.getStatus() : "PENDING")
+                .tag("NEW")
                 .build();
 
         // Save venue first
         venue = venueRepository.save(venue);
+
+        // Generate slots
+        slotService.generateSlotsForVenue(venue);
 
         List<VenueImage> venueImages = new java.util.ArrayList<>();
         String coverPath = null;
@@ -124,7 +141,9 @@ public class VenueServiceImpl implements VenueService {
 
     @Override
     public List<Venue> getAllVenues() {
-        return venueRepository.findAll();
+        return venueRepository.findAll().stream()
+                .filter(v -> isSubscriptionActive(v.getVendorId()))
+                .toList();
     }
 
     @Override
@@ -143,17 +162,40 @@ public class VenueServiceImpl implements VenueService {
             org.springframework.data.domain.Pageable pageable) {
         org.springframework.data.jpa.domain.Specification<Venue> spec = com.bookmyplay.repository.spec.VenueSpecification
                 .filterByCriteria(searchDTO);
-        return venueRepository.findAll(spec, pageable);
+        List<Venue> allMatching = venueRepository.findAll(spec);
+        List<Venue> filtered = allMatching.stream()
+                .filter(v -> isSubscriptionActive(v.getVendorId()))
+                .toList();
+        
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), filtered.size());
+        
+        if (start > filtered.size()) {
+            return new org.springframework.data.domain.PageImpl<>(java.util.Collections.emptyList(), pageable, filtered.size());
+        }
+        
+        return new org.springframework.data.domain.PageImpl<>(filtered.subList(start, end), pageable, filtered.size());
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public String updateVenue(Long id, AddVenueRequest request) {
+
+        if (!isSubscriptionActive(request.getVendorId())) {
+            throw new RuntimeException("Your free trial has expired. Purchase a subscription plan to continue publishing your venues.");
+        }
 
         Venue venue = venueRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Venue Not Found"));
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category Not Found"));
+
+        // Check if timing or slot duration has changed
+        boolean timingOrDurationChanged = !venue.getOpenTime().equalsIgnoreCase(request.getOpenTime())
+                || !venue.getCloseTime().equalsIgnoreCase(request.getCloseTime())
+                || (venue.getSlotDuration() == null && request.getSlotDuration() != null)
+                || (venue.getSlotDuration() != null && !venue.getSlotDuration().equals(request.getSlotDuration()));
 
         venue.setVenueName(request.getVenueName());
         venue.setCategory(category);
@@ -171,8 +213,19 @@ public class VenueServiceImpl implements VenueService {
         venue.setPostalCode(request.getPostalCode());
         venue.setOpenTime(request.getOpenTime());
         venue.setCloseTime(request.getCloseTime());
+        venue.setSlotDuration(request.getSlotDuration());
+        if (request.getStatus() != null) {
+            venue.setStatus(request.getStatus());
+        }
 
         venueRepository.save(venue);
+
+        if (timingOrDurationChanged) {
+            // Delete only future unbooked slots
+            slotService.deleteFutureUnbookedSlots(id);
+            // Generate new slots
+            slotService.generateSlotsForVenue(venue);
+        }
 
         return "Venue Updated Successfully";
     }
@@ -187,5 +240,13 @@ public class VenueServiceImpl implements VenueService {
         venueRepository.deleteById(id);
 
         return "Venue Deleted Successfully";
+    }
+
+    private boolean isSubscriptionActive(Long vendorId) {
+        List<VendorSubscription> subs = subscriptionRepository.findByVendorId(vendorId);
+        return subs.stream()
+                .anyMatch(s -> "ACTIVE".equalsIgnoreCase(s.getStatus()) 
+                        && s.getExpiryDate() != null 
+                        && !s.getExpiryDate().isBefore(LocalDate.now()));
     }
 }

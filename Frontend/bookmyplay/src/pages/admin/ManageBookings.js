@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AdminSidebar from "../../components/AdminSidebar";
+import AdminNavbar from "../../components/AdminNavbar";
 import { FaSearch, FaTrash, FaEye, FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 
 function ManageBookings() {
@@ -76,7 +77,9 @@ function ManageBookings() {
           <AdminSidebar />
         </div>
 
-        <div className="col-md-10 p-4">
+        <div className="col-md-10 p-0 bg-light" style={{ minHeight: "100vh" }}>
+          <AdminNavbar />
+          <div className="px-4 pb-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2 className="fw-bold mb-0">Manage Bookings</h2>
             
@@ -196,8 +199,6 @@ function ManageBookings() {
               )}
             </div>
           )}
-        </div>
-      </div>
 
       {/* DETAIL MODAL */}
       {viewingBooking && (
@@ -249,6 +250,9 @@ function ManageBookings() {
           </div>
         </div>
       )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

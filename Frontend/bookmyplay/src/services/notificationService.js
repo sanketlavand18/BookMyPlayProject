@@ -18,10 +18,7 @@ export const markAllAsRead = (userId) => {
     return axios.put(`${API}/read-all/${userId}`);
 };
 
-export const sendNotification = (notificationData) => {
-    return axios.post(`${API}/send`, notificationData);
-};
-
 export const deleteNotification = (id) => {
     return axios.delete(`${API}/${id}`);
 };
+export const getNotifications = getUserNotifications;

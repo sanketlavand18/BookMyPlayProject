@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../css/Register.css";
 import { registerUser } from "../services/authService";
+import logo from "../assets/images/logo.png";
 import {
     FaUser,
     FaEnvelope,
@@ -13,6 +14,8 @@ import {
     FaCheckCircle,
     FaExclamationCircle
 } from "react-icons/fa";
+
+const Swal = window.Swal;
 
 function Register() {
     const navigate = useNavigate();
@@ -39,13 +42,19 @@ function Register() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+        
+        let sanitizedValue = value;
+        if (name === "phone") {
+            sanitizedValue = value.replace(/\D/g, "").slice(0, 10);
+        }
+
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: sanitizedValue
         }));
 
         if (name === "password") {
-            checkPasswordStrength(value);
+            checkPasswordStrength(sanitizedValue);
         }
     };
 
@@ -77,7 +86,7 @@ function Register() {
         // 10-digit Phone Validation
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(formData.phone)) {
-            return "Phone number must be exactly 10 digits.";
+            return "Mobile number must be exactly 10 digits.";
         }
 
         if (formData.password.length < 6) {
@@ -105,17 +114,29 @@ function Register() {
         setLoading(true);
 
         try {
-            const response = await registerUser(formData);
+            await registerUser(formData);
             
-            setSuccessMsg("Registration successful! Redirecting to login...");
+            const roleName = formData.role === "USER" ? "User" : formData.role === "VENDOR" ? "Vendor" : "Admin";
+            await Swal.fire({
+                icon: "success",
+                title: "Registration Successful",
+                text: `${roleName} Registration Successful.`,
+                showConfirmButton: false,
+                timer: 2000
+            });
             
-            setTimeout(() => {
-                navigate("/login");
-            }, 2500);
+            navigate("/login");
 
         } catch (error) {
             console.error(error);
-            setErrorMsg(error.response?.data || "Registration failed. Try again.");
+            const errMsg = error.response?.data || "Registration failed. Try again.";
+            setErrorMsg(errMsg);
+            await Swal.fire({
+                icon: "error",
+                title: "Registration Failed",
+                text: errMsg,
+                confirmButtonText: "OK"
+            });
         } finally {
             setLoading(false);
         }
@@ -124,6 +145,11 @@ function Register() {
     return (
         <div className="register-page">
             <div className="register-card border-0 shadow-lg">
+                <div className="d-flex justify-content-center mb-3">
+                    <div className="logo-container logo-auth">
+                        <img src={logo} alt="Book My Play" className="app-logo" />
+                    </div>
+                </div>
                 <h2 className="register-title">Create Account</h2>
                 <p className="register-subtitle">Join BookMyPlay today</p>
 
@@ -186,9 +212,12 @@ function Register() {
                                 type="tel"
                                 className="form-control"
                                 name="phone"
-                                placeholder="10-digit number"
                                 value={formData.phone}
                                 onChange={handleChange}
+                                maxLength={10}
+                                pattern="[0-9]{10}"
+                                inputMode="numeric"
+                                placeholder="Enter 10-digit mobile number"
                                 required
                             />
                         </div>

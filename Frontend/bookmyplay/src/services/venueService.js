@@ -8,6 +8,7 @@ export const searchVenues = (params) => {
     return api.get("/venues/search", { params });
 };
 
+
 export const getVenueById = (id) => {
     return api.get(`/venues/${id}`);
 };

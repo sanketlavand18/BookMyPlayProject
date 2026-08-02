@@ -23,6 +23,10 @@ function Booking() {
     const [loading, setLoading] = useState(false);
     const [pageLoading, setPageLoading] = useState(true);
 
+    const [couponCodeInput, setCouponCodeInput] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponError, setCouponError] = useState("");
+
     const [booking, setBooking] = useState({
         userId: user.id,
         venueId: Number(id),
@@ -30,8 +34,58 @@ function Booking() {
         startTime: "",
         endTime: "",
         totalPrice: 0,
-        slotId: ""
+        slotId: "",
+        couponCode: ""
     });
+
+    const handleApplyCoupon = async () => {
+        if (!couponCodeInput.trim()) {
+            setCouponError("Please enter a coupon code.");
+            return;
+        }
+
+        try {
+            setCouponError("");
+            const res = await axios.get(`http://localhost:8080/api/coupons/validate?code=${couponCodeInput.trim()}`);
+            const coupon = res.data;
+
+            const originalPrice = venue.pricePerHour;
+            const discountPercentage = coupon.discount;
+            const discountAmount = (originalPrice * discountPercentage) / 100;
+            const finalAmount = originalPrice - discountAmount;
+
+            setAppliedCoupon(coupon);
+            setBooking(prev => ({
+                ...prev,
+                totalPrice: finalAmount,
+                couponCode: coupon.couponCode
+            }));
+
+            window.Swal.fire({
+                icon: "success",
+                title: "Coupon Applied!",
+                text: `Coupon ${coupon.couponCode} applied successfully. Discount: ${coupon.discount}%`,
+                showConfirmButton: false,
+                timer: 2000
+            });
+        } catch (error) {
+            console.error(error);
+            const msg = error.response?.data || "Invalid Coupon Code";
+            setCouponError(msg);
+            window.Swal.fire({
+                icon: "error",
+                title: "Coupon Error",
+                text: msg,
+                confirmButtonText: "OK"
+            });
+            setAppliedCoupon(null);
+            setBooking(prev => ({
+                ...prev,
+                totalPrice: venue.pricePerHour,
+                couponCode: ""
+            }));
+        }
+    };
 
     useEffect(() => {
         loadVenueDetails();
@@ -86,7 +140,12 @@ function Booking() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!booking.slotId) {
-            alert("Please select a time slot first.");
+            window.Swal.fire({
+                icon: "warning",
+                title: "Slot Required",
+                text: "Please select a time slot first.",
+                confirmButtonText: "OK"
+            });
             return;
         }
 
@@ -96,7 +155,12 @@ function Booking() {
             // Load Razorpay checkout script
             const isScriptLoaded = await loadRazorpayScript();
             if (!isScriptLoaded) {
-                alert("Failed to load Razorpay SDK. Verify internet connectivity.");
+                window.Swal.fire({
+                    icon: "error",
+                    title: "SDK Error",
+                    text: "Failed to load Razorpay SDK. Verify internet connectivity.",
+                    confirmButtonText: "OK"
+                });
                 setLoading(false);
                 return;
             }
@@ -142,11 +206,22 @@ function Booking() {
                         } catch (notifErr) {
                             console.error("Failed to send notification:", notifErr);
                         }
-                        alert("Payment successful! Booking confirmed. 🎉");
-                        navigate("/user");
+                        await window.Swal.fire({
+                            icon: "success",
+                            title: "Booking Successful!",
+                            text: "Your venue has been booked successfully.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+                        navigate("/user/bookings");
                     } catch (verifyError) {
                         console.error(verifyError);
-                        alert("Transaction signature verification failed.");
+                        await window.Swal.fire({
+                            icon: "error",
+                            title: "Verification Failed",
+                            text: "Transaction signature verification failed.",
+                            confirmButtonText: "OK"
+                        });
                     }
                 },
                 prefill: {
@@ -163,7 +238,12 @@ function Booking() {
             rzp.open();
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || error.response?.data || "Booking transaction failed.");
+            await window.Swal.fire({
+                icon: "error",
+                title: "Booking Failed",
+                text: error.response?.data?.message || error.response?.data || "Booking transaction failed.",
+                confirmButtonText: "OK"
+            });
         } finally {
             setLoading(false);
         }
@@ -227,6 +307,35 @@ function Booking() {
 
                                 <hr className="my-4" />
 
+                                {/* Coupon Section */}
+                                <div className="card border border-2 border-primary-subtle rounded-4 p-4 mb-4 bg-white shadow-sm">
+                                    <h5 className="fw-bold mb-3 text-primary d-flex align-items-center">🏷️ Have a Coupon?</h5>
+                                    <div className="input-group">
+                                        <input
+                                            type="text"
+                                            className="form-control rounded-start-3"
+                                            placeholder="Enter coupon code"
+                                            value={couponCodeInput}
+                                            onChange={(e) => setCouponCodeInput(e.target.value)}
+                                            disabled={loading}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary rounded-end-3 fw-bold"
+                                            onClick={handleApplyCoupon}
+                                            disabled={loading}
+                                        >
+                                            Apply Coupon
+                                        </button>
+                                    </div>
+                                    {couponError && <div className="text-danger small mt-2">{couponError}</div>}
+                                    {appliedCoupon && (
+                                        <div className="text-success small mt-2 fw-semibold">
+                                            ✓ Coupon "{appliedCoupon.couponCode}" applied successfully!
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Booking Summary Box */}
                                 <div className="card bg-light border-0 rounded-4 p-4 mb-4">
                                     <h5 className="fw-bold mb-3 d-flex align-items-center"><FaCalendarCheck className="text-success me-2" /> Booking Summary</h5>
@@ -246,6 +355,23 @@ function Booking() {
                                         </div>
                                     </div>
                                     <hr />
+                                    {appliedCoupon && (
+                                        <>
+                                            <div className="row mb-2">
+                                                <div className="col-6 text-muted">Original Price:</div>
+                                                <div className="col-6 fw-semibold text-end">₹ {venue.pricePerHour}</div>
+                                            </div>
+                                            <div className="row mb-2">
+                                                <div className="col-6 text-muted">Discount Percentage:</div>
+                                                <div className="col-6 fw-semibold text-end text-success">{appliedCoupon.discount}%</div>
+                                            </div>
+                                            <div className="row mb-2">
+                                                <div className="col-6 text-muted">Discount Amount:</div>
+                                                <div className="col-6 fw-semibold text-end text-success">- ₹ {(venue.pricePerHour * appliedCoupon.discount) / 100}</div>
+                                            </div>
+                                            <hr />
+                                        </>
+                                    )}
                                     <div className="row">
                                         <div className="col-6 text-muted fw-bold d-flex align-items-center"><FaRegMoneyBillAlt className="me-2 text-success" /> Amount Pay:</div>
                                         <div className="col-6 fw-bold text-success text-end fs-4">₹ {booking.totalPrice}</div>

@@ -16,4 +16,12 @@ public interface ReviewService {
 
     void deleteReview(Long id);
 
+    Review replyToReview(Long reviewId, String reply);
+
+    Review hideReview(Long reviewId, boolean isHidden);
+
+    List<Review> getReviewsByVendor(Long vendorId);
+
+    List<Review> getAllReviews();
+
 }

@@ -34,4 +34,8 @@ public class AddVenueRequest {
     private String openTime;
 
     private String closeTime;
+
+    private Integer slotDuration;
+
+    private String status;
 }

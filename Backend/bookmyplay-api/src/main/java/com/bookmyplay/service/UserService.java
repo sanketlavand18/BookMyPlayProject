@@ -15,4 +15,9 @@ public interface UserService {
 
     User getUserById(Long id);
 
+    void verifyForgotPassword(String email, String enteredCaptcha, String generatedCaptcha);
+
+    void resetPassword(String email, String newPassword);
+
+    User uploadProfileImage(Long id, org.springframework.web.multipart.MultipartFile file);
 }

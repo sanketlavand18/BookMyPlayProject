@@ -1,0 +1,200 @@
+================================================================================
+BOOKMYPLAY CLEANUP VERIFICATION REPORT
+================================================================================
+
+This document verifies the dependency check for every unused file proposed for deletion.
+
+--------------------------------------------------------------------------------
+1. file: Backend/bookmyplay-api/src/main/java/com/bookmyplay/entity/passwordresettoken.java
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Legacy class unused in the captcha password reset flow.
+- References found: None in code.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+2. file: Backend/bookmyplay-api/src/main/java/com/bookmyplay/repository/passwordresettokenrepository.java
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Legacy repository interface unused in the captcha password reset flow.
+- References found: None in code.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+3. file: Backend/bookmyplay-api/src/main/java/com/bookmyplay/dto/addslotrequest.java
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused DTO file containing only clean-up placeholder comments.
+- References found: None in code.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+4. file: Backend/bookmyplay-api/src/main/java/com/bookmyplay/dto/forgotpasswordrequest.java
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete forgot password request DTO; replaced by VerifyForgotPasswordRequest.
+- References found: None in code.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+5. file: Frontend/bookmyplay/src/pages/About.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Deprecated bridge file; App.js imports About.jsx directly.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+6. file: Frontend/bookmyplay/src/pages/MyBookings.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete dashboard placeholder page; App.js routes to UserBookings.js instead.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+7. file: Frontend/bookmyplay/src/pages/Profile.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete profile placeholder page; App.js routes to UserProfile.js instead.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+8. file: Frontend/bookmyplay/src/user/Dashboard.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete dashboard component inside obsolete directory.
+- References found: None.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+9. file: Frontend/bookmyplay/src/user/UserNavbar.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete navbar placeholder inside obsolete directory (src/components/UserNavbar.js is active).
+- References found: None.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+10. file: Frontend/bookmyplay/src/user/UserSidebar.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete sidebar placeholder inside obsolete directory (src/components/UserSidebar.js is active).
+- References found: None.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+11. file: Frontend/bookmyplay/src/components/CategorySection.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+12. file: Frontend/bookmyplay/src/components/DashboardCard.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+13. file: Frontend/bookmyplay/src/components/FeaturedVenues.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+14. file: Frontend/bookmyplay/src/components/HeroSection.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+15. file: Frontend/bookmyplay/src/components/SearchSection.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+16. file: Frontend/bookmyplay/src/components/SportsSection.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+17. file: Frontend/bookmyplay/src/components/Statistics.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+18. file: Frontend/bookmyplay/src/components/Testimonials.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+19. file: Frontend/bookmyplay/src/components/WhyChooseUs.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Unused widget placeholder.
+- References found: None in imports.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+20. file: Frontend/bookmyplay/src/components/admin/AdminNavbar.js
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Obsolete placeholder inside obsolete directory (src/components/AdminNavbar.js is active).
+- References found: None.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+--------------------------------------------------------------------------------
+21. file: Logo BookMyPlay.png
+--------------------------------------------------------------------------------
+- Status: SAFE TO DELETE
+- Reason: Redundant duplicate copy of the application logo at the workspace root (src/assets/images/logo.png is active).
+- References found: None in code.
+- Dependency chain: None.
+- Impact if deleted: None.
+
+================================================================================
+VERIFICATION SUMMARY
+================================================================================
+All listed candidates for project cleanup have zero dependencies, zero code imports, and zero configuration bindings. They are 100% safe to delete.
+================================================================================

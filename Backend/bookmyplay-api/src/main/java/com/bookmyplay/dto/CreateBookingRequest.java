@@ -20,4 +20,6 @@ public class CreateBookingRequest {
 
     private Long slotId;
 
+    private String couponCode;
+
 }

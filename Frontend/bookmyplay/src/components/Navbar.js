@@ -1,24 +1,26 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaBell, FaCircle, FaUserCircle, FaUser, FaCalendarAlt, FaStar, FaLock, FaSignOutAlt } from "react-icons/fa";
+import { FaBell, FaCircle, FaUserCircle, FaUser, FaCalendarAlt, FaStar, FaLock, FaSignOutAlt, FaCog } from "react-icons/fa";
 import { getUnreadNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
+import { useAuth } from "../context/AuthContext";
+import logo from "../assets/images/logo.png";
 
 function Navbar() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user: currentUser, logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    if (user && user.id) {
+    if (currentUser && currentUser.id) {
       loadNotifications();
       const interval = setInterval(loadNotifications, 10000);
       return () => clearInterval(interval);
     }
-  }, [user?.id]);
+  }, [currentUser?.id]);
 
   const loadNotifications = async () => {
     try {
-      const response = await getUnreadNotifications(user.id);
+      const response = await getUnreadNotifications(currentUser.id);
       setNotifications(response.data || []);
     } catch (error) {
       console.error("Error loading navbar notifications:", error);
@@ -36,19 +38,23 @@ function Navbar() {
 
   const handleMarkAllRead = async () => {
     try {
-      await markAllAsRead(user.id);
+      await markAllAsRead(currentUser.id);
       loadNotifications();
     } catch (error) {
       console.error("Error marking all read:", error);
     }
   };
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("user");
-      alert("Logged out successfully");
-      navigate("/login");
-    }
+  const handleLogout = async () => {
+    logout();
+    await window.Swal.fire({
+      icon: "success",
+      title: "Logged Out Successfully",
+      text: "You have been logged out successfully.",
+      showConfirmButton: false,
+      timer: 2000
+    });
+    navigate("/login");
   };
 
   return (
@@ -56,8 +62,9 @@ function Navbar() {
       <div className="container">
         
         {/* Logo */}
-        <Link className="navbar-brand fw-bold fs-3 text-success" to="/">
-          BookMyPlay
+        <Link className="navbar-brand" to="/">
+          <img src={logo} alt="Book My Play" className="logo-img" />
+          <span className="brand-text">BookMyPlay</span>
         </Link>
 
         {/* Mobile Toggle */}
@@ -85,7 +92,7 @@ function Navbar() {
               <Link className="nav-link" to="/contact">Contact</Link>
             </li>
 
-            {user ? (
+            {currentUser ? (
               <>
                 {/* Notification Bell */}
                 <li className="nav-item dropdown ms-2">
@@ -133,16 +140,25 @@ function Navbar() {
                 {/* Welcome Dropdown */}
                 <li className="nav-item dropdown ms-3">
                   <button
-                    className="nav-link btn btn-link border-0 text-white dropdown-toggle shadow-none d-flex align-items-center gap-1 fw-semibold"
+                    className="nav-link btn btn-link border-0 text-white dropdown-toggle shadow-none d-flex align-items-center gap-2 fw-semibold"
                     id="profileDropdown"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    <FaUserCircle className="fs-4 text-light" />
-                    <span>Welcome, {user.fullName}</span>
+                    {currentUser.profilePicture ? (
+                      <img
+                        src={currentUser.profilePicture}
+                        alt="User"
+                        className="rounded-circle border"
+                        style={{ width: "24px", height: "24px", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <FaUserCircle className="fs-4 text-light" />
+                    )}
+                    <span>Welcome, {currentUser.fullName}</span>
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 py-2 mt-2" aria-labelledby="profileDropdown" style={{ minWidth: "180px" }}>
-                    {user.role === "VENDOR" ? (
+                    {currentUser.role === "VENDOR" ? (
                       <>
                         <li>
                           <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/vendor/profile">
@@ -160,7 +176,7 @@ function Navbar() {
                           </Link>
                         </li>
                       </>
-                    ) : user.role === "ADMIN" ? (
+                    ) : currentUser.role === "ADMIN" ? (
                       <>
                         <li>
                           <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/admin/profile">
@@ -176,23 +192,13 @@ function Navbar() {
                     ) : (
                       <>
                         <li>
-                          <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/user/profile?tab=profile">
+                          <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/user/profile">
                             <FaUser className="text-muted" /> My Profile
                           </Link>
                         </li>
                         <li>
-                          <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/user/profile?tab=bookings">
-                            <FaCalendarAlt className="text-muted" /> My Bookings
-                          </Link>
-                        </li>
-                        <li>
-                          <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/user/profile?tab=reviews">
-                            <FaStar className="text-muted" /> My Reviews
-                          </Link>
-                        </li>
-                        <li>
-                          <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/user/profile?tab=password">
-                            <FaLock className="text-muted" /> Change Password
+                          <Link className="dropdown-item py-2 d-flex align-items-center gap-2 small" to="/user/settings">
+                            <FaCog className="text-muted" /> Settings
                           </Link>
                         </li>
                       </>

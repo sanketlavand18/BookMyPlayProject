@@ -174,8 +174,6 @@ function ManagePayments() {
               )}
             </div>
           )}
-        </div>
-      </div>
 
       {/* DETAIL MODAL */}
       {viewingPayment && (
@@ -229,6 +227,8 @@ function ManagePayments() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

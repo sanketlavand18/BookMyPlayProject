@@ -1,6 +1,5 @@
 package com.bookmyplay.service.impl;
 
-import com.bookmyplay.dto.AddSlotRequest;
 import com.bookmyplay.entity.Slot;
 import com.bookmyplay.entity.Venue;
 import com.bookmyplay.repository.SlotRepository;
@@ -24,83 +23,123 @@ public class SlotServiceImpl implements SlotService {
     private final VenueRepository venueRepository;
 
     @Override
-    public String addSlot(AddSlotRequest request) {
-        Slot slot = new Slot();
-        slot.setVenueId(request.getVenueId());
-        slot.setSlotDate(request.getSlotDate());
-        slot.setStartTime(request.getStartTime());
-        slot.setEndTime(request.getEndTime());
-        slot.setIsBooked(false);
-        slotRepository.save(slot);
-        return "Slot Added Successfully";
+    public List<Slot> getSlotsByVenue(Long venueId, LocalDate date) {
+        LocalDate today = LocalDate.now();
+        if (date == null) {
+            date = today;
+        }
+
+        LocalDate maxDate = today.plusDays(6);
+        if (date.isBefore(today) || date.isAfter(maxDate)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Booking date must be within the rolling 7-day window."
+            );
+        }
+
+        List<Slot> dbSlots = slotRepository.findByVenueIdAndSlotDate(venueId, date);
+
+        if (dbSlots.isEmpty()) {
+            Venue venue = venueRepository.findById(venueId)
+                    .orElseThrow(() -> new RuntimeException("Venue Not Found"));
+
+            LocalTime openLocal = parseTime(venue.getOpenTime());
+            LocalTime closeLocal = parseTime(venue.getCloseTime());
+            Integer duration = venue.getSlotDuration();
+
+            // Fallbacks
+            if (openLocal == null) openLocal = LocalTime.of(7, 0);
+            if (closeLocal == null) closeLocal = LocalTime.of(19, 0);
+            if (duration == null) duration = 60;
+
+            generateSlotsForDate(venue, date, openLocal, closeLocal, duration);
+            dbSlots = slotRepository.findByVenueIdAndSlotDate(venueId, date);
+        }
+
+        if (date.equals(today)) {
+            LocalTime now = LocalTime.now();
+            List<Slot> filtered = new java.util.ArrayList<>();
+            for (Slot s : dbSlots) {
+                if (s.getStartTime().isAfter(now)) {
+                    filtered.add(s);
+                }
+            }
+            return filtered;
+        }
+
+        return dbSlots;
     }
 
     @Override
-    public List<Slot> getSlotsByVenue(Long venueId, LocalDate date) {
-        if (date == null) {
-            date = LocalDate.now();
-        }
-
-        Venue venue = venueRepository.findById(venueId)
-                .orElseThrow(() -> new RuntimeException("Venue Not Found"));
-
+    @org.springframework.transaction.annotation.Transactional
+    public void generateSlotsForVenue(Venue venue) {
         LocalTime openLocal = parseTime(venue.getOpenTime());
         LocalTime closeLocal = parseTime(venue.getCloseTime());
 
-        // Fallbacks if not set
-        if (openLocal == null) openLocal = LocalTime.of(7, 0);
-        if (closeLocal == null) closeLocal = LocalTime.of(19, 0);
+        if (openLocal == null || closeLocal == null) {
+            throw new IllegalArgumentException("Invalid opening or closing time format.");
+        }
 
-        List<Slot> generatedSlots = new ArrayList<>();
+        if (!openLocal.isBefore(closeLocal)) {
+            throw new IllegalArgumentException("Opening time must be before closing time.");
+        }
 
-        // Fetch already booked slots from DB for this venue
-        List<Slot> dbSlots = slotRepository.findByVenueId(venueId);
+        Integer duration = venue.getSlotDuration();
+        if (duration == null || duration <= 0) {
+            throw new IllegalArgumentException("Slot duration is required and must be greater than zero.");
+        }
+
+        long totalMinutes = java.time.Duration.between(openLocal, closeLocal).toMinutes();
+        if (totalMinutes < duration) {
+            throw new IllegalArgumentException("Selected slot duration does not fit within the operating hours.");
+        }
+
+        LocalDate today = LocalDate.now();
+        // Generate for the next 30 days
+        for (int i = 0; i < 30; i++) {
+            LocalDate date = today.plusDays(i);
+            generateSlotsForDate(venue, date, openLocal, closeLocal, duration);
+        }
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteFutureUnbookedSlots(Long venueId) {
+        slotRepository.deleteFutureUnbookedSlots(venueId, LocalDate.now());
+    }
+
+    private void generateSlotsForDate(Venue venue, LocalDate date, LocalTime openLocal, LocalTime closeLocal, int duration) {
+        List<Slot> existing = slotRepository.findByVenueIdAndSlotDate(venue.getId(), date);
 
         LocalTime current = openLocal;
-        long dummyId = 1L;
         while (current.isBefore(closeLocal)) {
-            LocalTime next = current.plusHours(1);
+            LocalTime next = current.plusMinutes(duration);
             if (next.isAfter(closeLocal)) {
                 break;
             }
 
-            final LocalDate finalDate = date;
             final LocalTime finalCurrent = current;
             final LocalTime finalNext = next;
 
-            // Check if this slot matches any booked slot in DB
-            Slot matchingDbSlot = dbSlots.stream()
-                    .filter(s -> s.getSlotDate().equals(finalDate) &&
-                                 s.getStartTime().equals(finalCurrent) &&
-                                 s.getEndTime().equals(finalNext))
-                    .findFirst().orElse(null);
+            // Check if there is an overlapping slot in database (overlap: sStart < finalNext && finalCurrent < sEnd)
+            boolean hasOverlap = existing.stream().anyMatch(s -> {
+                LocalTime sStart = s.getStartTime();
+                LocalTime sEnd = s.getEndTime();
+                return sStart.isBefore(finalNext) && finalCurrent.isBefore(sEnd);
+            });
 
-            Slot slot = new Slot();
-            slot.setVenueId(venueId);
-            slot.setSlotDate(date);
-            slot.setStartTime(current);
-            slot.setEndTime(next);
-
-            if (matchingDbSlot != null) {
-                slot.setId(matchingDbSlot.getId());
-                slot.setIsBooked(matchingDbSlot.getIsBooked());
-            } else {
-                slot.setId(-dummyId); // Temporary negative ID
+            if (!hasOverlap) {
+                Slot slot = new Slot();
+                slot.setVenueId(venue.getId());
+                slot.setSlotDate(date);
+                slot.setStartTime(current);
+                slot.setEndTime(next);
                 slot.setIsBooked(false);
-                dummyId++;
+                slotRepository.save(slot);
             }
 
-            generatedSlots.add(slot);
             current = next;
         }
-
-        return generatedSlots;
-    }
-
-    @Override
-    public String deleteSlot(Long id) {
-        slotRepository.deleteById(id);
-        return "Slot Deleted Successfully";
     }
 
     private LocalTime parseTime(String timeStr) {

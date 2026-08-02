@@ -46,7 +46,8 @@ function VenueCard({ venue }) {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
             <FaStar className="text-warning me-1"/>
-            <span>4.8</span>
+            <span className="fw-semibold text-dark">{venue.averageRating ? venue.averageRating.toFixed(1) : "0.0"}</span>
+            <span className="text-muted small ms-1">({venue.totalReviews || 0} Reviews)</span>
           </div>
           {venue.openTime && (
             <span className="small text-muted">⏰ {venue.openTime} - {venue.closeTime}</span>

@@ -11,3 +11,269 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Admin Layout Custom Styles */
+body.admin-layout-active {
+  overflow-x: hidden;
+}
+
+body.admin-layout-active .admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  z-index: 1000;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Thin modern scrollbars inside the sidebar */
+body.admin-layout-active .admin-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+body.admin-layout-active .admin-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body.admin-layout-active .admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+body.admin-layout-active .admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+body.admin-layout-active .admin-sidebar .nav-link {
+  transition: all 0.2s ease-in-out;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+body.admin-layout-active .admin-sidebar .nav-link:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+body.admin-layout-active .admin-sidebar .nav-link.bg-success {
+  color: #ffffff !important;
+}
+
+/* Handle grid columns adjustments on Desktop */
+@media (min-width: 768px) {
+  body.admin-layout-active .col-md-2 {
+    width: 240px !important;
+    flex: 0 0 240px !important;
+    max-width: 240px !important;
+  }
+  body.admin-layout-active .col-md-10 {
+    width: calc(100% - 240px) !important;
+    flex: 0 0 calc(100% - 240px) !important;
+    max-width: calc(100% - 240px) !important;
+    margin-left: 240px !important;
+  }
+}
+
+/* Mobile responsive off-canvas drawer (< 768px) */
+@media (max-width: 767.98px) {
+  body.admin-layout-active .col-md-2 {
+    width: 0 !important;
+    flex: 0 0 0 !important;
+    max-width: 0 !important;
+  }
+  body.admin-layout-active .col-md-10 {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+  
+  body.admin-layout-active .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    z-index: 1050;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  body.admin-sidebar-open .admin-sidebar {
+    transform: translateX(0);
+  }
+  
+  /* Sidebar Mobile Overlay Backdrop */
+  body.admin-layout-active::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1040;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  body.admin-sidebar-open::after {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .border-start-md {
+    border-left: 1px solid #dee2e6 !important;
+  }
+}
+
+/* Lightbox Image zoom overlay styles */
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.cursor-zoom {
+  cursor: zoom-in;
+}
+
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+.hover-scale:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.truncate-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Logo Sizing & Responsive Styles */
+.logo-container {
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+}
+
+.logo-container.logo-navbar {
+  width: 50px;
+  height: 50px;
+}
+
+.logo-container.logo-sidebar {
+  width: 70px;
+  height: 70px;
+}
+
+.logo-container.logo-auth {
+  width: 120px;
+  height: 120px;
+}
+
+.logo-container.logo-footer {
+  width: 45px;
+  height: 45px;
+}
+
+.app-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.brand-text {
+  font-size: 36px;
+  font-weight: 700;
+  color: #16A34A;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-brand{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:24px 0 18px;
+}
+
+.sidebar-logo{
+    width:72px;
+    height:72px;
+    object-fit:contain;
+    border-radius:50%;
+}
+
+.sidebar-title{
+    margin-top:10px;
+    font-size:22px;
+    font-weight:700;
+    color:#22C55E;
+    font-family:'Poppins',sans-serif;
+    letter-spacing:.5px;
+    text-align:center;
+}
+
+/* User Dashboard Welcome Banner Styles */
+.welcome-banner-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.welcome-banner-title {
+  font-size: 40px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  line-height: 1.2 !important;
+}
+
+.welcome-banner-subtitle {
+  color: #4b5563 !important;
+  font-size: 1.05rem !important;
+}
+
+@media (max-width: 991.98px) {
+  .welcome-banner-title {
+    font-size: 34px !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .welcome-banner-title {
+    font-size: 26px !important;
+  }
+  .welcome-banner-card {
+    padding: 1.5rem !important;
+  }
+}
+
